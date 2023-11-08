@@ -15,7 +15,7 @@ library("tidyverse")
 # Load Data ----
 
 # Main dataset, mostly from RAND Longitudinal + Tracker: 
-HRS <- read.csv("../../DP_HRS_Only/HRS_cleaned.csv")
+HRS <- read.csv("../../DP_HRS_Only/HRS_pulled.csv")
 
 # Re-code ----
 hrs <- HRS %>%
@@ -202,6 +202,8 @@ hrs <- HRS %>%
     CESD_NEW6PT_HRS_15 = cesd_depressed_HRS_15+cesd_effort_HRS_15+cesd_restless_HRS_15+
                          cesd_lonely_HRS_15+cesd_sad_HRS_15+cesd_going_HRS_15,
     
+    # No changes need to be made to: SBP, DBP, PULSE
+    # Also have other tests available, but unsure if necessary. 
 
     ## Health Conditions ----
     # Per Scott: we will assume that once they report the condition, they will always have it
@@ -873,6 +875,53 @@ hrs <- hrs %>% rename(
     MILITARY_HRS_RA = MILITARY_HRS
 ) 
 
+hrs <- hrs %>% mutate(
+  ALCOHOL_EVER_HRS_1 = case_when(hrs$ALCOHOL_NOW_HRS_1 == 1 ~ 1,
+                                 hrs$ALCOHOL_NOW_HRS_1 == 0 ~ 0),
+  ALCOHOL_EVER_HRS_2 = case_when(hrs$ALCOHOL_NOW_HRS_2 == 1 | ALCOHOL_EVER_HRS_1 == 1 ~ 1,
+                                 hrs$ALCOHOL_NOW_HRS_2 == 0 | ALCOHOL_EVER_HRS_1 == 0 ~ 0),
+  ALCOHOL_EVER_HRS_3 = case_when(hrs$ALCOHOL_NOW_HRS_3 == 1 | ALCOHOL_EVER_HRS_2 == 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_3 == 0 | ALCOHOL_EVER_HRS_2 == 0)~ 0),
+  ALCOHOL_EVER_HRS_4 = case_when(hrs$ALCOHOL_NOW_HRS_4 == 1 | ALCOHOL_EVER_HRS_3 == 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_4 == 0 | ALCOHOL_EVER_HRS_3 == 0)|
+                                (ALCOHOL_EVER_HRS_3 == 0 | is.na(ALCOHOL_EVER_HRS_3)) ~ 0),
+  ALCOHOL_EVER_HRS_5 = case_when(hrs$ALCOHOL_NOW_HRS_5 == 1 | ALCOHOL_EVER_HRS_4 == 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_5 == 0 | ALCOHOL_EVER_HRS_4 == 0)|
+                                (ALCOHOL_EVER_HRS_4 == 0 | is.na(ALCOHOL_EVER_HRS_4)) ~ 0),
+  ALCOHOL_EVER_HRS_6 = case_when(hrs$ALCOHOL_NOW_HRS_6 == 1 | ALCOHOL_EVER_HRS_5 == 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_6 == 0 | ALCOHOL_EVER_HRS_5 == 0)|
+                                (ALCOHOL_EVER_HRS_5 == 0 | is.na(ALCOHOL_EVER_HRS_5)) ~ 0),
+  ALCOHOL_EVER_HRS_7 = case_when(hrs$ALCOHOL_NOW_HRS_7 == 1 | ALCOHOL_EVER_HRS_6 == 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_7 == 0 | ALCOHOL_EVER_HRS_6 == 0)|
+                                (ALCOHOL_EVER_HRS_6 == 0 | is.na(ALCOHOL_EVER_HRS_6)) ~ 0),
+  ALCOHOL_EVER_HRS_8 = case_when(hrs$ALCOHOL_NOW_HRS_8 == 1 | ALCOHOL_EVER_HRS_7 == 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_8 == 0 | ALCOHOL_EVER_HRS_7 == 0)|
+                                (ALCOHOL_EVER_HRS_7 == 0 | is.na(ALCOHOL_EVER_HRS_7)) ~ 0),
+  ALCOHOL_EVER_HRS_9 = case_when(hrs$ALCOHOL_NOW_HRS_9 == 1 | ALCOHOL_EVER_HRS_8 == 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_9 == 0 | ALCOHOL_EVER_HRS_8 == 0)|
+                                (ALCOHOL_EVER_HRS_8 == 0 | is.na(ALCOHOL_EVER_HRS_8)) ~ 0),
+  # switch to less than 12 alcoholic beverages in lifetime - much larger sample
+  ALCOHOL_EVER_HRS_10= case_when(hrs$ALCOHOL_NOW_HRS_10== 1 | ALCOHOL_EVER_HRS_9 == 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_10== 0 | ALCOHOL_EVER_HRS_9 == 0)|
+                                (ALCOHOL_EVER_HRS_9 == 0 | is.na(ALCOHOL_EVER_HRS_9)) ~ 0),
+  ALCOHOL_EVER_HRS_11= case_when(hrs$ALCOHOL_NOW_HRS_11== 1 | ALCOHOL_EVER_HRS_10== 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_11== 1 | ALCOHOL_EVER_HRS_10== 0)|
+                                (ALCOHOL_EVER_HRS_10== 0 | is.na(ALCOHOL_EVER_HRS_10))~ 0),
+  ALCOHOL_EVER_HRS_12= case_when(hrs$ALCOHOL_NOW_HRS_12== 1 | ALCOHOL_EVER_HRS_11== 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_12== 0 | ALCOHOL_EVER_HRS_11== 0)| 
+                                (ALCOHOL_EVER_HRS_11== 0 | is.na(ALCOHOL_EVER_HRS_11))~ 0),
+  ALCOHOL_EVER_HRS_13= case_when(hrs$ALCOHOL_NOW_HRS_13== 1 | ALCOHOL_EVER_HRS_12== 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_13== 0 | ALCOHOL_EVER_HRS_12== 0)|
+                                (ALCOHOL_EVER_HRS_12== 0 | is.na(ALCOHOL_EVER_HRS_12))~ 0),
+  ALCOHOL_EVER_HRS_14= case_when(hrs$ALCOHOL_NOW_HRS_14== 1 | ALCOHOL_EVER_HRS_13== 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_14== 0 | ALCOHOL_EVER_HRS_13== 0)| 
+                                (ALCOHOL_EVER_HRS_13== 0 | is.na(ALCOHOL_EVER_HRS_13))~ 0),
+  ALCOHOL_EVER_HRS_15= case_when(hrs$ALCOHOL_NOW_HRS_15== 1 | ALCOHOL_EVER_HRS_14== 1 ~ 1,
+                                (hrs$ALCOHOL_NOW_HRS_15== 0 | ALCOHOL_EVER_HRS_14== 0)| 
+                                (ALCOHOL_EVER_HRS_14== 0 | is.na(ALCOHOL_EVER_HRS_14))~ 0)
+  
+)
+
 ## Remove intermediate variables ----
 hrs <- hrs %>% select(
   -starts_with("DIABETES_HRS_EVER"),
@@ -1014,6 +1063,9 @@ hrs <- hrs %>% select(
   starts_with("WEIGHT"),
   starts_with("BMI"),
   starts_with("CESD_NEW6PT"),
+  starts_with("SYSTOLIC"),
+  starts_with("DIASTOLIC"),
+  starts_with("PULSE"),
   starts_with("DIAB"),
   starts_with("HYPERTENSION"),
   starts_with("CANCER"),
@@ -1043,5 +1095,4 @@ hrs <- hrs %>% select(
   starts_with("CAGE"))
 
 ## Data sets ----
-saveRDS(hrs, 
-        file.path("../../Alcohol_Cognition/Datasets/hrs_recoded.RDS"))
+saveRDS(hrs, file.path("../../DP_HRS_Only/HRS_recoded.RDS"))

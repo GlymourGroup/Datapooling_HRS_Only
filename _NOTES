@@ -1,0 +1,21 @@
+We start with a cohort that has at least one visit in young and one visit in old
+This cohort is where we can derive the "truth"
+(can't use participants who weren't present in the `old` subset as we don't know their outcome)
+
+We then divide and mask the cohort. 
+
+We can't carry anything from BEFORE the mediator measurement. 
+*split the cohort BEFORE carrying forward any observations*
+
+We can carry forward observations in the younger cohort up to 2006, but we shouldn't use them in the matching process. We will limit matching variables to those values from 2006. 
+
+
+Probably can't carry forward observations in the older cohort
+
+=============
+*Get weights for the association of the matching variable with both exposure and outcome*
+=============
+`RELIGION`, `MILITARY`, `EDU_NEW` are not time-varying in HRS. 
+`ALCOHOL_NOW`, `MARRIAGE` are asked every year
+`ALCOHOL_EVER` is built from ALCOHOL_NOW
+`A`

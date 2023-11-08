@@ -366,4 +366,4 @@ d_out <- d_out %>%
 
 # Write-out ----
 # If we save as RDS, the variables remain as haven type :(
-write.csv(d_out, "../../DP_HRS_Only/HRS_cleaned.csv", row.names=FALSE)
+write.csv(d_out, "../../DP_HRS_Only/HRS_pulled.csv", row.names=FALSE)
