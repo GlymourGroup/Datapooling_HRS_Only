@@ -23,37 +23,14 @@ d$young_long<-readRDS("../../DP_HRS_Only/HRS_young.rds")
 ### Instructions ----
 instructions <- dget("Instructions/Instructions_00.R")
 
+### Weights ----
+weights <- readRDS("../../DP_HRS_Only/Weights.RDS")
+weights <- weights$total$GENHEALTH_HRS_14
+
 ## QC ----
 d_nTracker <- list()
 d_nTracker$OLD_start <- length(unique(d$old_long$CASE_ID_OLD_RA))
 d_nTracker$young_start<-length(unique(d$young_long$CASE_ID_HRS_RA))
-
-
-# Calculate Exposure Weights ----
-## Get some exposure ----
-exp_temp <- d$young %>% select(CASE_ID_HRS_RA, WEIGHT_HRS_2)
-
-## Append to wave most similar to OLD ----
-exp_temp <- left_join(d$young_long %>% filter(Year == 2006), 
-                      exp_temp)
-
-weights <- list() # initiate empty list to store results
-
-for(distVar in instructions$distVars){ #loop through each matching variable
-  aFormula <- as.formula(paste0("WEIGHT_HRS_2~",distVar)) # Construct formula
-  Amodel <- lm(aFormula, data=exp_temp) # Run SLR
-  weights[[distVar]] <- summary(Amodel)$r.squared # Store results in "weights"
-}
-
-### IMPORTANT BUT ARBITRARY DECISIONS: ----
-# assign some weight to age based off r2 for exposure
-weights$AGEINTERVIEW = weights$WEIGHT
-# scale all the weights by 100
-weights = lapply(weights, function(x){x*100})
-
-
-
-
 
 # Base-line exact matching ----
 
@@ -96,8 +73,7 @@ d_nTracker$exact_match_baseline <- nrow(ID_LookUp_Exact_BL)
 
 ## Select TV variables from OLD baseline ----
 old_exact_timevarying <- old_firstobs %>% 
-  select(CASE_ID_OLD_RA,
-         Year,
+  select(CASE_ID_OLD_RA, Year,
          all_of(instructions$exact_timevarying))
 
 # Join to ID_LookUp 
@@ -105,6 +81,7 @@ ID_LookUp_Exact_TV <- left_join(ID_LookUp_Exact_BL, old_exact_timevarying)
 
 ## Repeat for young ----
 young_exact_timevarying <- d$young_long %>% 
+  filter(Year == 2006) %>% # should the mediators only becoming from 2006?
   select(CASE_ID_HRS_RA,
          Year,
          all_of(instructions$exact_timevarying)) %>%
@@ -125,41 +102,43 @@ d_nTracker$exact_match_tv <- nrow(ID_LookUp_Exact_TV)
 # Exact Match on Age ----
 
 ## Age "OLD" joined ----
-temp <- left_join(ID_LookUp_Exact_TV, 
-                  old_firstobs %>% 
-                    select(CASE_ID_OLD_RA, Year,
-                           names(instructions$exact_HRS_timevarying)))
+ID_LookUp_Age <- left_join(ID_LookUp_Exact_TV, 
+                           old_firstobs %>% 
+                             select(CASE_ID_OLD_RA, Year,
+                                    names(instructions$exact_HRS_timevarying)))
 
 ## Matched YOUNG age ----
-temp <- left_join(temp, 
-                  d$young_long %>% 
-                    select(CASE_ID_HRS_RA, Year,
-                           names(instructions$exact_HRS_timevarying)) %>%
-                    rename(Year_young = Year,
-                           AGEINTERVIEW_young = AGEINTERVIEW),
-                  relationship = "many-to-many")
+ID_LookUp_Age<-left_join(ID_LookUp_Age, 
+                         d$young_long %>% 
+                           filter(Year == 2006) %>% 
+                           select(CASE_ID_HRS_RA, Year,
+                                  names(instructions$exact_HRS_timevarying)) %>%
+                           rename(Year_young = Year,
+                                  AGEINTERVIEW_young = AGEINTERVIEW),
+                         relationship = "many-to-many")
 
 for(var in names(instructions$exact_HRS_timevarying)){
-  temp[,paste0(var,"_dif")] <- abs(temp[,var] - temp[,paste0(var,"_young")])
-  temp[["flag"]] <- temp[,paste0(var,"_dif")] <= 5
-  temp <- temp %>% filter(flag == 1)
+  ID_LookUp_Age[,paste0(var,"_dif")] <- 
+    abs(ID_LookUp_Age[,var] - ID_LookUp_Age[,paste0(var,"_young")])
+  ID_LookUp_Age[["flag"]] <- ID_LookUp_Age[,paste0(var,"_dif")] <= 5
+  ID_LookUp_Age <- ID_LookUp_Age %>% filter(flag == 1)
 }
 
 ## Age-Restricted Pairs ----
-temp <- temp %>% select(CASE_ID_OLD_RA, CASE_ID_HRS_RA, Year, Year_young)
+ID_LookUp_Age <- ID_LookUp_Age %>% 
+  select(CASE_ID_OLD_RA, CASE_ID_HRS_RA, Year, Year_young)
 
-d_nTracker$exact_match_HRS_TV <- nrow(temp)
+d_nTracker$exact_match_HRS_TV <- nrow(ID_LookUp_Age)
 
 
 
 # Distance Matching ----
 
 ## Start with OLD ----
-ids = unique(ID_LookUp_Exact_TV$CASE_ID_OLD_RA)
+ids = unique(ID_LookUp_Age$CASE_ID_OLD_RA)
 
 ## Merge in exact matched counterparts ----
-matched <- ID_LookUp_Exact_TV %>% 
-  select(CASE_ID_OLD_RA, CASE_ID_HRS_RA, Year_young)
+matched <- ID_LookUp_Age %>% select(CASE_ID_OLD_RA, CASE_ID_HRS_RA, Year_young)
 
 ## Append "Baseline" wave from OLD ----
 matched <- left_join(matched, old_firstobs)
@@ -172,6 +151,7 @@ matched <- matched %>%
          Year_young = Year_young_OLD)
 
 temp_young <- d$young_long %>% 
+  filter(Year == 2006) %>%
   rename_with(~ paste0(.x, "_young")) %>% 
   rename(CASE_ID_HRS_RA = CASE_ID_HRS_RA_young)
 
@@ -180,14 +160,18 @@ matched <- left_join(matched, temp_young)
 
 ## Calculate Distances ----
 for(var in instructions$distVars){
-  matched[[paste0(var,"_dist")]] = abs(matched[[paste0(var,"_OLD")]] - matched[[paste0(var,"_young")]])
-  matched[[paste0(var,"_z_dist")]] = abs(matched[[paste0(var,"_z_OLD")]] - matched[[paste0(var,"_z_young")]])
+  matched[[paste0(var,"_dist")]] = 
+    abs(matched[[paste0(var,"_OLD")]] - matched[[paste0(var,"_young")]])
+  matched[[paste0(var,"_z_dist")]] = 
+    abs(matched[[paste0(var,"_z_OLD")]] - matched[[paste0(var,"_z_young")]])
 }
 
 ## Calculate Weights ----
 for(var in instructions$distVars){
-  matched[[paste0(var,"_dist_weighted")]] = 1/weights[[var]]*matched[[paste0(var,"_dist")]]
-  matched[[paste0(var,"_z_dist_weighted")]] = 1/weights[[var]]*matched[[paste0(var,"_z_dist")]]
+  matched[[paste0(var,"_dist_weighted")]] = 
+    1/weights[[var]]*matched[[paste0(var,"_dist")]]
+  matched[[paste0(var,"_z_dist_weighted")]] = 
+    1/weights[[var]]*matched[[paste0(var,"_z_dist")]]
 }
 
 ## Total the distances ----
@@ -199,10 +183,14 @@ matched$dist_weighted = 0
 matched$dist_unweighted = 0
 
 for(var in instructions$distVars){
-  matched$dist_z_weighted = matched$dist_z_weighted + matched[[paste0(var,"_z_dist_weighted")]]
-  matched$dist_z_unweighted=matched$dist_z_unweighted+matched[[paste0(var,"_z_dist")]]
-  matched$dist_weighted   = matched$dist_weighted + matched[[paste0(var,"_dist_weighted")]]
-  matched$dist_unweighted = matched$dist_unweighted+ matched[[paste0(var,"_dist")]]
+  matched$dist_z_weighted = 
+    matched$dist_z_weighted + matched[[paste0(var,"_z_dist_weighted")]]
+  matched$dist_z_unweighted=
+    matched$dist_z_unweighted+matched[[paste0(var,"_z_dist")]]
+  matched$dist_weighted   = 
+    matched$dist_weighted + matched[[paste0(var,"_dist_weighted")]]
+  matched$dist_unweighted = 
+    matched$dist_unweighted+ matched[[paste0(var,"_dist")]]
 }
 
 # For some reason, can't directly manipulate weight of interest
@@ -245,3 +233,37 @@ for(var in QC_info$Variable){
   }
   QC_info[var,paste0("threshold_",cut_off)] <- threshold
 }
+
+
+# Get number of HRS participants pre-trim
+d_nTracker$OLD_precutoff <- length(unique(out$CASE_ID_OLD_RA))
+
+## Filtering ----
+cat("Trimming observations\n")
+
+# Create trim_tracker to track how many observations are dropped at each step
+trim_tracker <- list()
+trim_tracker[["pre-trim"]] <- nrow(out)
+
+# create a list to store the data
+data_qc <- out
+
+# For each distance variable:
+for(var in instructions$distVars){
+  
+  # Look up threshold
+  threshold <- QC_info[var,paste0("threshold_",cut_off)]
+  
+  # Subset to distances less than the threshold
+  data_qc <- data_qc %>% filter(.data[[paste0(var,"_dist")]] <= threshold)
+  
+  # Track change in sample size
+  trim_tracker[[var]] <- nrow(data_qc)
+}
+
+# Track the sample size
+nTracker[[set]][[paste0("threshold_",cut_off)]] <- nrow(data_qc[[paste0("threshold_",cut_off)]][[set]])
+nTracker[[set]][[paste0("HRS_post-",cut_off,"-cutoff")]] <- length(unique(data_qc[[paste0("threshold_",cut_off)]][[set]]$CASE_ID_HRS_RA))
+
+
+

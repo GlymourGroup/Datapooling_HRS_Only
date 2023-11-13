@@ -85,10 +85,19 @@ hrs <- HRS %>%
     # Veteran status already coded as binary
 
     # Parental Education coded as years of education with ceiling of 17 years
-    MOM_EDU_IND_HRS_RA = case_when(is.na(MOM_EDU_HRS_RA) ~ 1,
-                                   !is.na(MOM_EDU_HRS_RA)~ 0),
-    DAD_EDU_IND_HRS_RA = case_when(is.na(DAD_EDU_HRS_RA) ~ 1,
-                                   !is.na(DAD_EDU_HRS_RA)~ 0),
+    # If missing set to 0, otherwise use a similar schema to EDU_NEW
+    MOM_EDU_HRS_RA = case_when(is.na(MOM_EDU_HRS_RA) ~ 0,
+                               MOM_EDU_HRS_RA <= 8 ~ 1, # Less than HS
+                               MOM_EDU_HRS_RA <= 11~ 2, # Some HS
+                               MOM_EDU_HRS_RA <= 15~ 3, # HS/Some higher
+                               MOM_EDU_HRS_RA >  15~ 4),
+    DAD_EDU_HRS_RA = case_when(is.na(DAD_EDU_HRS_RA) ~ 0,
+                               DAD_EDU_HRS_RA <= 8 ~ 1, # Less than HS
+                               DAD_EDU_HRS_RA <= 11~ 2, # Some HS
+                               DAD_EDU_HRS_RA <= 15~ 3, # HS/Some higher
+                               DAD_EDU_HRS_RA >  15~ 4),
+    
+    
 
     # Religion - "at baseline"
     RELIGION_HRS_RA = recode(RELIGION_HRS_RA,
@@ -1048,7 +1057,7 @@ hrs <- hrs %>% select(
   starts_with("INTERVIEW_BEGDT_"),
   starts_with("INTERVIEW_ENDDT_"),
   starts_with("AGEINTERVIEW_HRS"),
-  starts_with("EDU"),
+  starts_with("EDU_NEW"),
   starts_with("MOM"),
   starts_with("DAD"),
   FEMALE_HRS_RA,

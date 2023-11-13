@@ -9,13 +9,31 @@ We can't carry anything from BEFORE the mediator measurement.
 
 We can carry forward observations in the younger cohort up to 2006, but we shouldn't use them in the matching process. We will limit matching variables to those values from 2006. 
 
-
 Probably can't carry forward observations in the older cohort
 
 =============
-*Get weights for the association of the matching variable with both exposure and outcome*
-=============
-`RELIGION`, `MILITARY`, `EDU_NEW` are not time-varying in HRS. 
-`ALCOHOL_NOW`, `MARRIAGE` are asked every year
-`ALCOHOL_EVER` is built from ALCOHOL_NOW
-`A`
+11/08/2023
+Check in with Scott on how to code health conditions/alcohol_ever as are based on past observations. 
+Do we need to re-code SMOKE_EVER such that it truely is smoke ever? (seems to be coded as I would). 
+Could get the last observation per participant and cesnor forward. 
+
+Trimming the carry forward in the younger cohort causes some observations to be dropped. (extreme values observed in weight, height, BMI)
+
+Check in with Scott and Maria about Matching_Var weights.
+
+Per Maria, it's fine to use any outcome wave so long as it can approximate the original dataset. 
+
+Currently, if there are missing values for any of the distance variables, the final distance will be treated as missing. If we were to code the missing values as zero, that would artificially shrink the score making the match seem better than it really is. if we were to assign some score, how would we do it?
+
+In the OLD data-set, we actually only have 8342 participants that have at least one wave of data. This is the maximum amount of true matches we should have. 
+
+Maybe go back upstream and limit those in the older cohort to only those who were present in 2006?
+
+
+============
+11/09/2023
+when we run the model on the truth, limit to those present in the older cohort to make it more comparable. 
+
+Before matching, we can limit to complete cases. 
+
+given concerns using the future to fill in the past, it may make more sense to use 2008 as the matching wave (where HRS would have in theory had BP measures on the entire cohort (both halfs))

@@ -6,7 +6,6 @@ list(
     #"Year",
     "HEIGHT", "WEIGHT", "BMI",
     "GENHEALTH", # factors
-    'DAD_EDU','MOM_EDU', 
     'INCOME_PP_LOG10',
     'CESD_NEW6PT',
     'SYSTOLIC_BP', 'DIASTOLIC_BP', 'PULSE'
@@ -16,12 +15,14 @@ list(
     "FEMALE", 
     "RACE_ETH",
     "USBIRTH",
-    "MOM_EDU_IND",
-    "DAD_EDU_IND"),
+    "RELIGION",
+    "MILITARY",
+    "EDU_NEW",'DAD_EDU','MOM_EDU'),
   
   exact_timevarying = c(
-    "RELIGIONCURRENT", "ALCOHOL_EVER",'ALCOHOL_NOW','MILITARY', 'MARRIAGE',
-    "EDU_NEW",
+    #"RELIGIONCURRENT", 
+    "ALCOHOL_EVER",'ALCOHOL_NOW',#'MILITARY', 
+    'MARRIAGE',
     # The following were moved from distance matching (all binary)
     "LIGHT_EXERCISE", "VIG_EXERCISE", 
     'DIABETES','HYPERTENSION','CANCER','HEARTPROB',

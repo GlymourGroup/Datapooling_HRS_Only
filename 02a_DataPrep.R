@@ -93,11 +93,20 @@ wave_n <- hrs_tv_long %>%
 
 # Split the cohort ----
 # Both subsets should contain the matching wave: 2006
+# Participants should be present in all three waves: 1994, 2006, 2018
+
+# Randomly assign participants to the older and younger cohorts
+cohort_assignment <-  d$HRS %>% 
+  select(CASE_ID_HRS_RA) %>%
+  mutate(cohort = rbinom(nrow(.), 1, .5))
+
+hrs_tv_long <- left_join(hrs_tv_long, cohort_assignment)
 
 ## Older ----
 
 ### Subset ----
-hrs_old <- hrs_tv_long %>% filter(Year >= 2006) %>%
+hrs_old <- hrs_tv_long %>% 
+  filter(Year >= 2006, cohort == 1) %>%
   rename(CASE_ID_OLD_RA = CASE_ID_HRS_RA)
 
 # Can we carry forward information in the older subset?
@@ -111,7 +120,8 @@ for(distVar in instructions$distVars){
 ## Younger  ----
 
 ### Subset ----
-hrs_young <- hrs_tv_long %>% filter(Year <=2006)
+hrs_young <- hrs_tv_long %>% 
+  filter(Year <=2006, cohort == 0)
 
 ### Carry forward ----
 hrs_young <- hrs_young %>% 

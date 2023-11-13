@@ -362,7 +362,9 @@ d_out <- d_out %>%
   # Participants must have started in 1992
   filter(FIRSTIW == 1992,
          # and have 1994 wave data
-         !is.na(INTERVIEW_BEGDT_HRS_2))
+         !is.na(INTERVIEW_BEGDT_HRS_2), # because exposure was first measured here
+         !is.na(INTERVIEW_BEGDT_HRS_8), # Mediator wave
+         !is.na(INTERVIEW_BEGDT_HRS_14))# Outcome wave
 
 # Write-out ----
 # If we save as RDS, the variables remain as haven type :(
