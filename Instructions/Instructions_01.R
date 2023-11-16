@@ -1,5 +1,7 @@
 # Instructions file
 # Contains three lists of variables to match at different stages of analysis
+# Compared to _00 removes: USBIRTH, MILITARY, and PULSE
+  # as found to have R2 < FEMALE
 
 list(
   distVars = c(
@@ -9,15 +11,15 @@ list(
     "GENHEALTH", # factors
     'INCOME_PP_LOG10',
     'CESD_NEW6PT',
-    'SYSTOLIC_BP', 'PULSE' #'DIASTOLIC_BP',
+    'SYSTOLIC_BP'#, 'PULSE' 'DIASTOLIC_BP',
     ),
   
   exact = c(
     "FEMALE", 
     "RACE_ETH",
-    "USBIRTH",
+    #"USBIRTH",
     "RELIGION",
-    "MILITARY",
+    #"MILITARY",
     "EDU_NEW",'DAD_EDU','MOM_EDU'),
   
   exact_timevarying = c(

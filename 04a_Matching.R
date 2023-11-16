@@ -21,7 +21,7 @@ d$old_long <- readRDS("../../DP_HRS_Only/HRS_old.rds")
 d$young_long<-readRDS("../../DP_HRS_Only/HRS_young.rds")
 
 ### Instructions ----
-instructions <- dget("Instructions/Instructions_00.R")
+instructions <- dget("Instructions/Instructions_01.R")
 
 ### Weights ----
 weights <- readRDS("../../DP_HRS_Only/Weights.RDS")
@@ -219,7 +219,7 @@ cut_off = 0.25
 ## Establish Cut-offs -----
 
 # Loop through each possible distance variable
-for(var in QC_info$Variable){
+for(var in instructions$distVars){
   cat(paste0("Calculating Threshold: ", var, "\n"))
   
   # Calculate the threshold from the HRS wave joined dataset

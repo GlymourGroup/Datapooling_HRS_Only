@@ -26,13 +26,8 @@ d$variables$timevarying <- d$HRS %>%
   select(CASE_ID_HRS_RA,
          starts_with("INTERVIEW_BEGDT"),
          starts_with("AGEINTERVIEW"),
-         #starts_with("EDU_NEW_HRS_RA"), # not time varying
-         #starts_with('DAD_EDU_HRS_RA'), # not time varying
-         #starts_with("MOM_EDU_HRS_RA"), # not time varying
          starts_with("MARRIAGE"),
-         #starts_with("MILITARY_"),   # not time varying
          starts_with("INCOME_PP_LOG10"),
-         #starts_with("RELIGION"),    # not time varying
          starts_with("HEIGHT_"),
          starts_with("WEIGHT_"),
          starts_with("BMI_"),
@@ -93,20 +88,11 @@ wave_n <- hrs_tv_long %>%
 
 # Split the cohort ----
 # Both subsets should contain the matching wave: 2006
-# Participants should be present in all three waves: 1994, 2006, 2018
-
-# Randomly assign participants to the older and younger cohorts
-cohort_assignment <-  d$HRS %>% 
-  select(CASE_ID_HRS_RA) %>%
-  mutate(cohort = rbinom(nrow(.), 1, .5))
-
-hrs_tv_long <- left_join(hrs_tv_long, cohort_assignment)
 
 ## Older ----
 
 ### Subset ----
-hrs_old <- hrs_tv_long %>% 
-  filter(Year >= 2006, cohort == 1) %>%
+hrs_old <- hrs_tv_long %>% filter(Year >= 2006) %>%
   rename(CASE_ID_OLD_RA = CASE_ID_HRS_RA)
 
 # Can we carry forward information in the older subset?
@@ -120,8 +106,7 @@ for(distVar in instructions$distVars){
 ## Younger  ----
 
 ### Subset ----
-hrs_young <- hrs_tv_long %>% 
-  filter(Year <=2006, cohort == 0)
+hrs_young <- hrs_tv_long %>% filter(Year <=2006)
 
 ### Carry forward ----
 hrs_young <- hrs_young %>% 

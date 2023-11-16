@@ -37,3 +37,25 @@ when we run the model on the truth, limit to those present in the older cohort t
 Before matching, we can limit to complete cases. 
 
 given concerns using the future to fill in the past, it may make more sense to use 2008 as the matching wave (where HRS would have in theory had BP measures on the entire cohort (both halfs))
+
+============
+11/13/2023
+
+Consider selecting one of the exercise variables.
+Combine Current and Ever into a categorical: Current, ever, never.
+Could pull in the outcome year to get a bigger sample size: check for n in these cases. 2014 vs 2016 vs 2018 
+
+=============
+11/14/2023
+
+Get rid of most exact variables. 
+Distance Variables: HEIGHT & WEIGHT, DIASTOLIC, PULSE
+
+We can put in the exact-matching variables in 03_CalculateWeights as factor variables to yield R2 values.
+
+Got a list of R2 for potential variables to cut-off. Included as instructions_01
+(instructions_00a might make more sense)
+
+============
+11/15/2023
+Re-consider threshold cut-offs? from 0.25 SD to 1.5 SD? Something in between?

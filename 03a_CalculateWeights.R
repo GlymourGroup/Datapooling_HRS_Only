@@ -24,7 +24,7 @@ d$old_long <- readRDS("../../DP_HRS_Only/HRS_old.rds")
 d$young_long<-readRDS("../../DP_HRS_Only/HRS_young.rds")
 
 ### Instructions ----
-instructions <- dget("Instructions/Instructions_00.R")
+instructions <- dget("Instructions/Instructions_01.R")
 
 ### Outcome info
 model_info <- read.csv("../../DP_HRS_Only/outcome_info.csv")
@@ -163,8 +163,8 @@ for(distVar in c(instructions$distVars,
   }
 }
 
-total_unscaled$GENHEALTH_HRS_14[order(unlist(total_unscaled$GENHEALTH_HRS_14))]
-total_weights$GENHEALTH_HRS_14[order(unlist(total_weights$GENHEALTH_HRS_14))]
+#total_unscaled$GENHEALTH_HRS_14[order(unlist(total_unscaled$GENHEALTH_HRS_14))]
+#total_weights$GENHEALTH_HRS_14[order(unlist(total_weights$GENHEALTH_HRS_14))]
 
 weights <- list(exposure  = exp_weights, 
                 scaled_exp=scaled_exp,
