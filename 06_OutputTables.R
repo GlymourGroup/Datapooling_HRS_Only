@@ -56,8 +56,8 @@ names(tbl_means) <- c("_OLD", "_young")
 tbl_sds <- tbl_means
 
 # Calculate descriptive statistics for each variable
-for(cohort in (c("_young"))){
-  for(var in c(var_order)){
+for(cohort in (c("_OLD","_young"))){
+  for(var in instructions$distVars){
     # If the variable is an exact variable, calc the n & proportion
     if(var %in% instructions$exact_timevarying){
       # Go through each level of the exact variable
@@ -113,16 +113,6 @@ write.csv(tbl_sds,"../../DP_HRS_Only/Tables/Matched_Cohort_SDs.csv")
 
 
 ## Matched Sample Size Tracker ----
-# Track sample size changes for each matching step
-# Start: Number of HRS participants at the start of matching
-# Exact: Number of HRS-NLSY Pairs after exact matching
-# Exact-tv: No. of pairs after exact matching on time-varying variables
-  # Exact-tv_HRS: Just the number of HRS participants
-
-# !!!!MISSING THE NUMBER OF PAIRS PRIOR TO QC!!!!
-
-# DistanceQC: No. Pairs after applying QC (distance cut-off at 0.25 SD)
-  # HRS_post-0.25-cuffoff: Just the number of HRS participants
 
 nTracker <- as.data.frame(t(as.data.frame(nTracker)))
 names(nTracker) <- "n"
@@ -165,6 +155,7 @@ m0$Matched <- paste0(round(temp_est,2)," (",
 
 ## GOLD STANDARD ----
 d_gold <- readRDS("../../DP_HRS_Only/HRS_wide.rds")
+d_gold <- readRDS("../../DP_HRS_Only/")
 # Standardize age
 d_gold$age_dec50 = (d_gold$AGEINTERVIEW_HRS_14-50)/10
 
@@ -185,3 +176,48 @@ m0$`Gold Standard` <- paste0(round(mG$Estimate,2)," (",
 # Combined
 write.csv(m0, "../../DP_HRS_Only/Tables/MainResults.csv")
 
+# TABLE 1 ----
+summary(d_gold_subset %>% 
+          select(c(paste0(c(#instructions$distVars, 
+                            instructions$exact_timevarying),
+                          "_HRS_9")#,
+                   #paste0(instructions$exact, "_HRS_RA")
+                   )))
+
+d_gold_unmatched <- d_gold%>%
+  filter(!(CASE_ID_HRS_RA %in% matched_data$CASE_ID_OLD_RA))
+
+summary(d_gold_subset %>% 
+          select(c(paste0(c(instructions$distVars, 
+                            instructions$exact_timevarying),
+                          "_HRS_9"),
+                   paste0(instructions$exact, "_HRS_RA"))))
+
+
+exact_uniquevals <- list()
+# Calculate descriptive statistics for each variable
+for(var in c(paste0(instructions$exact_timevarying, "_HRS_9"),
+             paste0(instructions$exact, "_HRS_RA"))){
+  # Go through each level of the exact variable
+  exact_uniquevals[[var]] <- unique(d_gold_subset[[var]])
+}
+exact_TV_combs <-  expand.grid(exact_uniquevals)
+
+exact_TV_combs$comb_index <- row_number(exact_TV_combs)
+
+combo <- left_join(d_gold_unmatched, exact_TV_combs)
+
+temp <- combo %>% 
+  group_by(comb_index) %>%
+  summarise(n = n()) %>%
+  ungroup()
+
+exact_TV_combs <- left_join(exact_TV_combs, temp)
+
+combo_matched <- left_join(d_gold_subset, exact_TV_combs)
+temp_matched <- combo_matched%>% 
+  group_by(comb_index) %>%
+  summarise(n_matched = n()) %>%
+  ungroup()
+
+exact_TV_combs <- left_join(exact_TV_combs, temp_matched)

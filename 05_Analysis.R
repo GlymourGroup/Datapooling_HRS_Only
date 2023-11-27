@@ -132,13 +132,6 @@ saveRDS(models, "../../DP_HRS_Only/Results/Analytic_Models.RDS")
 # initiate empty list
 rubin <- list()
 
-temp_rownames <- c()
-for(i in names(models)){
-  temp_rownames <- lubridate::setdiff(temp_rownames, 
-                                      names(models[[i]]$coefficients))
-}
- 
-
 cat("Running Rubin's Rules\n")
 # extract coefs
 coefficients<- as.data.frame(lapply(models, coef))

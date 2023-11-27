@@ -61,8 +61,10 @@ hrs <- HRS %>%
       RACEETH_HRS_RA==3 ~ "Other"),
     
     RACE_ETH_HRS_RA = case_when(
+      RACEETH_HRS_RA == 2 ~ "Black",
+      ETH_HRS_RA == "Hispanic" ~ "Hispanic",
       RACEETH_HRS_RA == 1 ~ "White",
-      TRUE ~ "Not-White"),
+      TRUE ~ "Other"),
 
     # Birth Country
     USBIRTH_HRS_RA = case_when(

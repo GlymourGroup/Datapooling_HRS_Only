@@ -28,9 +28,9 @@ weights <- readRDS("../../DP_HRS_Only/Weights.RDS")
 weights <- weights$total$GENHEALTH_HRS_14
 
 ## QC ----
-d_nTracker <- list()
-d_nTracker$OLD_start <- length(unique(d$old_long$CASE_ID_OLD_RA))
-d_nTracker$young_start<-length(unique(d$young_long$CASE_ID_HRS_RA))
+nTracker <- list()
+nTracker$OLD_start <- length(unique(d$old_long$CASE_ID_OLD_RA))
+nTracker$young_start<-length(unique(d$young_long$CASE_ID_HRS_RA))
 
 # Base-line exact matching ----
 
@@ -65,7 +65,7 @@ ID_LookUp_Exact_BL <- left_join(old_timeinvariant, young_timeinvariant,
   select(CASE_ID_OLD_RA, CASE_ID_HRS_RA) # Subset to only their IDs
 
 ## Track sample size ----
-d_nTracker$exact_match_baseline <- nrow(ID_LookUp_Exact_BL)
+nTracker$exact_match_baseline <- nrow(ID_LookUp_Exact_BL)
 
 
 
@@ -95,7 +95,7 @@ ID_LookUp_Exact_TV <- ID_LookUp_Exact_TV %>%
   select(CASE_ID_OLD_RA, Year, CASE_ID_HRS_RA, Year_young)
 
 ## Track Sample Size ----
-d_nTracker$exact_match_tv <- nrow(ID_LookUp_Exact_TV)
+nTracker$exact_match_tv <- nrow(ID_LookUp_Exact_TV)
 
 
 
@@ -128,7 +128,7 @@ for(var in names(instructions$exact_HRS_timevarying)){
 ID_LookUp_Age <- ID_LookUp_Age %>% 
   select(CASE_ID_OLD_RA, CASE_ID_HRS_RA, Year, Year_young)
 
-d_nTracker$exact_match_HRS_TV <- nrow(ID_LookUp_Age)
+nTracker$exact_match_HRS_TV <- nrow(ID_LookUp_Age)
 
 
 
@@ -209,12 +209,12 @@ out <- matched %>%
   ungroup()
 
 # Track Sample Size
-d_nTracker$distance_match <- nrow(out)
+nTracker$distance_match <- nrow(out)
 
 # Quality Control and Trimming ----
 QC_info <- read.csv("../../DP_HRS_Only/MatchQC_info.csv")
 row.names(QC_info) <- QC_info$Variable
-cut_off = 0.25
+cut_off = 1
 
 ## Establish Cut-offs -----
 
@@ -236,7 +236,7 @@ for(var in QC_info$Variable){
 
 
 # Get number of HRS participants pre-trim
-d_nTracker$OLD_precutoff <- length(unique(out$CASE_ID_OLD_RA))
+nTracker$OLD_precutoff <- length(unique(out$CASE_ID_OLD_RA))
 
 ## Filtering ----
 cat("Trimming observations\n")
@@ -262,7 +262,7 @@ for(var in instructions$distVars){
 }
 
 # Track the sample size
-d_nTracker[[paste0("threshold_",cut_off)]] <- nrow(data_qc)
+nTracker[[paste0("threshold_",cut_off)]] <- nrow(data_qc)
 # Quality of matches are poor at this point. 
 
 # Save ----
@@ -272,5 +272,5 @@ saveRDS(out %>% select(CASE_ID_OLD_RA, Wave_OLD,
                        new),
         file = "../../DP_HRS_Only/MatchedData_IDs.RDS")
 saveRDS(data_qc,file="QCd_MatchedData.RDS")
-saveRDS(d_nTracker,file="../../DP_HRS_Only/nTracker.RDS")
+saveRDS(nTracker,file="../../DP_HRS_Only/nTracker.RDS")
 saveRDS(trim_tracker,file="../../DP_HRS_Only/qc_step_tracker.RDS")

@@ -59,3 +59,15 @@ Got a list of R2 for potential variables to cut-off. Included as instructions_01
 ============
 11/15/2023
 Re-consider threshold cut-offs? from 0.25 SD to 1.5 SD? Something in between?
+
+Per Maria, get the characteristics of participants who were NOT matched and compare them to those that were matched. 
+  After BL matching, is any one left out? how do they differ from those who were matched?
+  Repeat after TV matching. 
+  How would this look for distance matching? 
+============
+11/16/2023
+In the matching script, save out a non-absolute value of the distance match so that when we are looking at the summary descriptives of the matches in 06_OutputTables, weget a better idea of the difference between the cohorts
+
+Get a list of IDs for those who were matched and those who weren't in the older sample. Make a Table 1 for those that were matched/not-matched. 
+
+Make a list where each key is a TV variable with the values being the possible values. Loop over and run a unique

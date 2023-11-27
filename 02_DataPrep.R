@@ -12,55 +12,6 @@ d <- list()
 d$HRS <- readRDS("../../DP_HRS_Only/HRS_recoded.RDS")
 instructions <- dget("Instructions/Instructions_00.R")
 
-# Show missingness in mediator and outcome
-summary(d$HRS %>% select(SYSTOLIC_BP_HRS_9, SYSTOLIC_BP_HRS_14,
-                         GENHEALTH_HRS_9, GENHEALTH_HRS_14, 
-                         DIABETES_HRS_9, DIABETES_HRS_14))
-
-# Missing Data ----
-
-## Manually carry forward ----
-## Physical Measurements are taken every other wave, 
-## carry info forward from previous wave
-
-d$HRS <- d$HRS %>% 
-  mutate(
-    # When the matching year is missing, use the year before
-    SYSTOLIC_BP_HRS_9 = case_when(is.na(SYSTOLIC_BP_HRS_9) ~ SYSTOLIC_BP_HRS_8,
-                                  TRUE ~ SYSTOLIC_BP_HRS_9),
-    GENHEALTH_HRS_9   = case_when(is.na(GENHEALTH_HRS_9) ~ GENHEALTH_HRS_8,
-                                  TRUE ~ GENHEALTH_HRS_9),
-    # similarly, when the matching year is missing, use the year before
-    SYSTOLIC_BP_HRS_14= case_when(is.na(SYSTOLIC_BP_HRS_14)~SYSTOLIC_BP_HRS_13,
-                                  TRUE ~ SYSTOLIC_BP_HRS_14),
-    GENHEALTH_HRS_14  = case_when(is.na(GENHEALTH_HRS_14) ~ GENHEALTH_HRS_13,
-                                  TRUE ~ GENHEALTH_HRS_14)
-    )
-
-## Complete Cases ----
-# MUST have the exposure AND outcome, not necessarily mediators
-# Find complete cases with regards to relevant data:
-cc <- d$HRS %>% select(CASE_ID_HRS_RA,  ends_with("_RA"),
-                       BMI_HRS_2,
-                       SYSTOLIC_BP_HRS_14, GENHEALTH_HRS_14, DIABETES_HRS_14,
-                       -ETH_HRS_RA,-RACE_HRS_RA,
-                       # -starts_with("COG")
-)
-names(cc) # to see if it has the co-variates of interest
-table(complete.cases(cc)) 
-
-# very few complete cases overall, but we can check by outcome
-# Diabetes:
-table(complete.cases(cc %>% select(-SYSTOLIC_BP_HRS_14, -GENHEALTH_HRS_14)))
-# Systolic BP:
-table(complete.cases(cc %>% select(-GENHEALTH_HRS_14, -DIABETES_HRS_14)))
-# Gen Health
-table(complete.cases(cc %>% select(-DIABETES_HRS_14, -SYSTOLIC_BP_HRS_14)))
-
-# We should check all, but for proof of concept, let's start with one
-cc <- cc[complete.cases(cc %>% select(-DIABETES_HRS_14, -SYSTOLIC_BP_HRS_14)),]
-d$HRS <- d$HRS %>% filter(CASE_ID_HRS_RA %in% cc$CASE_ID_HRS_RA)
-
 # Categorize matching vars ----
 
 ## Invariant ----
@@ -139,6 +90,43 @@ hrs_tv_long <- hrs_tv_long %>%
   ) %>% select(-c(SMOKE_EVER, ALCOHOL_EVER, SMOKE_NOW, ALCOHOL_NOW, 
                   CANCER, LIGHT_EXERCISE))
 
+## Carry Forward ----
+hrs_tv_long <- hrs_tv_long %>% 
+  group_by(CASE_ID_HRS_RA) %>%
+  fill(HEIGHT, WEIGHT, #LIGHT_EXERCISE, 
+       VIG_EXERCISE,
+       MARRIAGE,INCOME_PP_LOG10,
+       CESD_NEW6PT,DIABETES,HYPERTENSION,HEARTPROB,GENHEALTH,#CANCER,
+       SMK_STATUS, #SMOKE_EVER,SMOKE_NOW,
+       ALC_STATUS, #ALCOHOL_EVER,ALCOHOL_NOW,
+       SYSTOLIC_BP, DIASTOLIC_BP, PULSE) %>%
+  ungroup() %>%
+  # re-calculate BMI in HRS
+  mutate(BMI = (WEIGHT/(HEIGHT^2))) %>%
+  fill(BMI) %>%
+  group_by(CASE_ID_HRS_RA) %>%
+  fill(BMI) %>%
+  ungroup() 
+
+### Trim some extremes ----
+# Check in with Maria about this
+summary(hrs_tv_long %>% select(WEIGHT, HEIGHT, BMI))
+
+summary(hrs_tv_long %>%
+          filter(WEIGHT > quantile(WEIGHT, 0.0001) | is.na(WEIGHT),
+                 HEIGHT > quantile(HEIGHT, 0.0001) | is.na(HEIGHT),
+                 HEIGHT < max(HEIGHT, na.rm=TRUE) | is.na(HEIGHT),
+                 BMI > min(BMI, na.rm=TRUE) | is.na(BMI),
+                 BMI < max(BMI, na.rm=TRUE) | is.na(BMI)) %>%
+          select(WEIGHT, HEIGHT, BMI))
+
+hrs_tv_long <- hrs_tv_long %>%
+  filter(WEIGHT > quantile(WEIGHT, 0.0001) | is.na(WEIGHT),
+         HEIGHT > quantile(HEIGHT, 0.0001) | is.na(HEIGHT),
+         HEIGHT < max(HEIGHT, na.rm=TRUE) | is.na(HEIGHT),
+         BMI > min(BMI, na.rm=TRUE) | is.na(BMI),
+         BMI < max(BMI, na.rm=TRUE) | is.na(BMI))
+
 ## Count the number of of waves ----
 wave_n <- hrs_tv_long %>%
   group_by(CASE_ID_HRS_RA) %>%
@@ -151,19 +139,8 @@ table(wave_n$nwaves_contributed, useNA='ifany')
 hrs_tv_long <- left_join(hrs_tv_long, wave_n)
 
 # Split the cohort ----
-# Both subsets should contain the matching wave: 2008
-# Participants should be present in all three waves: 1994, 2008, 2018
 
-# Randomly assign participants to the older and younger cohorts
-set.seed(123)
-
-cohort_assignment <-  d$HRS %>% 
-  select(CASE_ID_HRS_RA) %>%
-  mutate(cohort = rbinom(nrow(.), 1, .5))
-
-# Merge in the cohort assignment
-hrs_tv_long <- left_join(hrs_tv_long, cohort_assignment)
-
+## Make the Data Wide ----
 hrs_tv_wide <- hrs_tv_long %>% 
   select(-Year) %>%
   pivot_wider(
@@ -178,6 +155,47 @@ hrs_tv_wide <- hrs_tv_long %>%
                   ALC_STATUS, #ALCOHOL_EVER, ALCOHOL_NOW,
                   SYSTOLIC_BP, DIASTOLIC_BP, PULSE
     ))
+
+# Participants should be present in: 1994, 2008, 2018
+
+# Show missingness in mediator and outcome
+summary(hrs_tv_wide %>% select(SYSTOLIC_BP_HRS_9, SYSTOLIC_BP_HRS_14,
+                         GENHEALTH_HRS_9, GENHEALTH_HRS_14,
+                         DIABETES_HRS_9, DIABETES_HRS_14))
+## Complete Cases ----
+# MUST have the exposure AND outcome, not necessarily mediators
+# Find complete cases with regards to relevant data:
+cc <- hrs_tv_wide %>% select(CASE_ID_HRS_RA,
+                       BMI_HRS_2,
+                       SYSTOLIC_BP_HRS_14, GENHEALTH_HRS_14, DIABETES_HRS_14,
+)
+names(cc) # to see if it has the co-variates of interest
+table(complete.cases(cc))
+
+# After carrying forward, we have a lot of complete cases
+# Diabetes:
+table(complete.cases(cc %>% select(-SYSTOLIC_BP_HRS_14, -GENHEALTH_HRS_14)))
+# Systolic BP:
+table(complete.cases(cc %>% select(-GENHEALTH_HRS_14, -DIABETES_HRS_14)))
+# Gen Health
+table(complete.cases(cc %>% select(-DIABETES_HRS_14, -SYSTOLIC_BP_HRS_14)))
+
+# Systolic BP is the limiting outcome
+# We should check all, but for proof of concept, let's start with GENHEALTH
+cc <- cc[complete.cases(cc %>% select(-DIABETES_HRS_14, -SYSTOLIC_BP_HRS_14)),]
+
+## Filter to complete cases ----
+hrs_tv_wide <- hrs_tv_wide %>% filter(CASE_ID_HRS_RA %in% cc$CASE_ID_HRS_RA)
+
+# Randomly assign participants to the older and younger cohorts
+set.seed(123)
+
+cohort_assignment <-  hrs_tv_wide %>% 
+  select(CASE_ID_HRS_RA) %>%
+  mutate(cohort = rbinom(nrow(.), 1, .5))
+
+# Merge in the cohort assignment
+hrs_tv_long <- left_join(hrs_tv_long, cohort_assignment)
 
 hrs_tv_wide <- inner_join(d$variables$invariant, hrs_tv_wide) 
 
@@ -201,43 +219,6 @@ for(distVar in instructions$distVars){
 ### Subset ----
 hrs_young <- hrs_tv_long %>% 
   filter(Year <=2008, cohort == 0)
-
-### Carry forward ----
-hrs_young <- hrs_young %>% 
-  group_by(CASE_ID_HRS_RA) %>%
-  fill(HEIGHT, WEIGHT, #LIGHT_EXERCISE, 
-       VIG_EXERCISE,
-       MARRIAGE,INCOME_PP_LOG10,
-       CESD_NEW6PT,DIABETES,HYPERTENSION,HEARTPROB,GENHEALTH,#CANCER,
-       SMK_STATUS, #SMOKE_EVER,SMOKE_NOW,
-       ALC_STATUS, #ALCOHOL_EVER,ALCOHOL_NOW,
-       SYSTOLIC_BP, DIASTOLIC_BP, PULSE) %>%
-  ungroup() %>%
-  # re-calculate BMI in HRS
-  mutate(BMI = (WEIGHT/(HEIGHT^2))) %>%
-  fill(BMI) %>%
-  group_by(CASE_ID_HRS_RA) %>%
-  fill(BMI) %>%
-  ungroup() 
-
-### Trim some extremes? ----
-# Check in with Maria about this
-summary(hrs_young %>% select(WEIGHT, HEIGHT, BMI))
-
-summary(hrs_young %>%
-  filter(WEIGHT > quantile(WEIGHT, 0.0001) | is.na(WEIGHT),
-         HEIGHT > quantile(HEIGHT, 0.0001) | is.na(HEIGHT),
-         HEIGHT < max(HEIGHT, na.rm=TRUE) | is.na(HEIGHT),
-         BMI > min(BMI, na.rm=TRUE) | is.na(BMI),
-         BMI < max(BMI, na.rm=TRUE) | is.na(BMI)) %>%
-    select(WEIGHT, HEIGHT, BMI))
-
-# hrs_young <- hrs_young %>%
-#   filter(WEIGHT > quantile(WEIGHT, 0.0001) | is.na(WEIGHT),
-#          HEIGHT > quantile(HEIGHT, 0.0001) | is.na(HEIGHT),
-#          HEIGHT < max(HEIGHT, na.rm=TRUE) | is.na(HEIGHT),
-#          BMI > min(BMI, na.rm=TRUE) | is.na(BMI),
-#          BMI < max(BMI, na.rm=TRUE) | is.na(BMI)) 
 
 ### Standardize  ----
 
