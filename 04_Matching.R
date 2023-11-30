@@ -21,7 +21,7 @@ d$old_long <- readRDS("../../DP_HRS_Only/HRS_old.rds")
 d$young_long<-readRDS("../../DP_HRS_Only/HRS_young.rds")
 
 ### Instructions ----
-instructions <- dget("Instructions/Instructions_01.R")
+instructions <- dget("Instructions/Instructions_02.R")
 
 ### Weights ----
 weights <- readRDS("../../DP_HRS_Only/Weights.RDS")
@@ -164,6 +164,12 @@ for(var in instructions$distVars){
     abs(matched[[paste0(var,"_OLD")]] - matched[[paste0(var,"_young")]])
   matched[[paste0(var,"_z_dist")]] = 
     abs(matched[[paste0(var,"_z_OLD")]] - matched[[paste0(var,"_z_young")]])
+  
+  # For QC purposes, save out actual distances
+  matched[[paste0(var,"_dist_QC")]] = 
+    matched[[paste0(var,"_OLD")]] - matched[[paste0(var,"_young")]]
+  matched[[paste0(var,"_z_dist_QC")]] = 
+    matched[[paste0(var,"_z_OLD")]] - matched[[paste0(var,"_z_young")]]
 }
 
 ## Calculate Weights ----
@@ -205,7 +211,7 @@ out <- matched %>%
   ungroup() %>% 
   group_by(CASE_ID_OLD_RA) %>%
   arrange(new, .by_group = TRUE) %>%  
-  slice_head(n=5) %>%
+  slice_head(n=10) %>%
   ungroup()
 
 # Track Sample Size
@@ -214,12 +220,12 @@ nTracker$distance_match <- nrow(out)
 # Quality Control and Trimming ----
 QC_info <- read.csv("../../DP_HRS_Only/MatchQC_info.csv")
 row.names(QC_info) <- QC_info$Variable
-cut_off = 1
+cut_off = 0.25
 
 ## Establish Cut-offs -----
 
 # Loop through each possible distance variable
-for(var in QC_info$Variable){
+for(var in instructions$distVars){
   cat(paste0("Calculating Threshold: ", var, "\n"))
   
   # Calculate the threshold from the HRS wave joined dataset
@@ -266,11 +272,11 @@ nTracker[[paste0("threshold_",cut_off)]] <- nrow(data_qc)
 # Quality of matches are poor at this point. 
 
 # Save ----
-saveRDS(out, file="../../DP_HRS_Only/Full_MatchedData.RDS")
-saveRDS(out %>% select(CASE_ID_OLD_RA, Wave_OLD, 
+saveRDS(out, file="../../DP_HRS_Only/Full_MatchedData.RDS") # why keep?
+saveRDS(data_qc,file="../../DP_HRS_Only/QCd_MatchedData.RDS")
+saveRDS(data_qc %>% select(CASE_ID_OLD_RA, Wave_OLD, 
                        CASE_ID_HRS_RA, Year_young, 
                        new),
-        file = "../../DP_HRS_Only/MatchedData_IDs.RDS")
-saveRDS(data_qc,file="QCd_MatchedData.RDS")
+        file = "../../DP_HRS_Only/QCd_MatchedData_IDs.RDS")
 saveRDS(nTracker,file="../../DP_HRS_Only/nTracker.RDS")
 saveRDS(trim_tracker,file="../../DP_HRS_Only/qc_step_tracker.RDS")

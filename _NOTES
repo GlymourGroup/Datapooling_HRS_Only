@@ -71,3 +71,11 @@ In the matching script, save out a non-absolute value of the distance match so t
 Get a list of IDs for those who were matched and those who weren't in the older sample. Make a Table 1 for those that were matched/not-matched. 
 
 Make a list where each key is a TV variable with the values being the possible values. Loop over and run a unique
+
+============
+11/29/2023
+
+When thinking about diabetes as the outcome, consider:
+  Restrict to people w/o diabetes in 2008
+  Match on HbA1c
+Alternatively for binary outcomes, can consider current depression?

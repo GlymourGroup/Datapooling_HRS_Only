@@ -13,6 +13,11 @@ n_dec <- 2
 
 # Load Data ----
 
+## Wide Data ----
+d <- list()
+d$old <- readRDS("../../DP_HRS_Only/HRS_old_wide.rds")
+d$young<-readRDS("../../DP_HRS_Only/HRS_young_wide.rds")
+
 ## Sample Size Tracker ----
 nTracker <- readRDS("../../DP_HRS_Only/nTracker.RDS")
 
@@ -30,10 +35,10 @@ var_order <- names(var_wts$total$GENHEALTH_HRS_14)
 
 ## Instruction Sets ----
 ## Instructions ----
-instructions <- dget("Instructions/Instructions_01.R")
+instructions <- dget("Instructions/Instructions_02.R")
 
 ## Matched Sets ----
-matched_data <- readRDS("../../DP_HRS_Only/Full_MatchedData.RDS")
+matched_data <- readRDS("../../DP_HRS_Only/QCd_MatchedData.RDS")
 
 ## Results ----
 
@@ -116,6 +121,8 @@ write.csv(tbl_sds,"../../DP_HRS_Only/Tables/Matched_Cohort_SDs.csv")
 
 nTracker <- as.data.frame(t(as.data.frame(nTracker)))
 names(nTracker) <- "n"
+nTracker[nrow(nTracker)+1,"n"] <- length(unique(matched_data$CASE_ID_OLD_RA))
+rownames(nTracker)[rownames(nTracker) == "9"] <- "OLD_postcutoff" 
 
 write.csv(nTracker, "../../DP_HRS_Only/Tables/nTracker.csv")
 
@@ -155,7 +162,6 @@ m0$Matched <- paste0(round(temp_est,2)," (",
 
 ## GOLD STANDARD ----
 d_gold <- readRDS("../../DP_HRS_Only/HRS_wide.rds")
-d_gold <- readRDS("../../DP_HRS_Only/")
 # Standardize age
 d_gold$age_dec50 = (d_gold$AGEINTERVIEW_HRS_14-50)/10
 
@@ -221,3 +227,61 @@ temp_matched <- combo_matched%>%
   ungroup()
 
 exact_TV_combs <- left_join(exact_TV_combs, temp_matched)
+
+
+
+# Table 1
+d$old <- d$old %>% mutate(
+  matched = case_when(CASE_ID_OLD_RA %in% matched_data$CASE_ID_OLD_RA ~ 1,
+                      !(CASE_ID_OLD_RA%in%matched_data$CASE_ID_OLD_RA)~ 0)
+)
+
+tbl1_cat <- c("FEMALE_HRS_RA", "RACE_ETH_HRS_RA")
+tbl1_cont<- c("AGEINTERVIEW_HRS_9", "GENHEALTH_HRS_14")
+
+# Create placeholders for categorical variables and their values
+# initiate an empty vector
+catVarNames_byCat <- c()
+# Then loop through each categorical variable
+for(cat in tbl1_cat){
+  # and identify the unique values of that variable
+  uniqueCats <- setdiff(unique(d$old[,cat]),NA)
+  # store a combination of "variable|value" in catVarNames_byCat
+  catVarNames_byCat <- c(catVarNames_byCat,paste0(cat,"|",uniqueCats))
+}
+
+get_univariate_table <- function(d){
+  # Initiate data frame of the numeric and categorical vars
+  table_univariate <- data.frame(matrix(nrow=length(c(tbl1_cont,
+                                                      catVarNames_byCat)),
+                                        ncol=2))
+  # The columns are the mean/count & SD/Proportion
+  colnames(table_univariate) <- c("Mean or Count","SD or Proportion")
+  rownames(table_univariate) <- c(tbl1_cont,catVarNames_byCat)
+  for(var in tbl1_cont){
+    table_univariate[var,]<-c(mean(d[[var]],na.rm=TRUE),sd(d[[var]],na.rm=TRUE))
+  }
+  for(var in tbl1_cat){
+    n_not_NA <- sum(!is.na(d[[var]]))
+    for(varValue in unique(d[,var])){
+      n_value <- sum(d[[var]]==varValue,na.rm=TRUE)
+      p <- n_value/n_not_NA
+      table_univariate[paste0(var,"|",varValue),] <- c(n_value,p)
+    }
+  }
+  return(table_univariate)
+}
+
+table1_matched <- round(get_univariate_table(d$old %>% filter(matched==1)),2)
+table1_unmatch <- round(get_univariate_table(d$old %>% filter(matched==0)), 2)
+
+table1_univariate <- data.frame(matrix(nrow=length(c(tbl1_cont,
+                                                     catVarNames_byCat)),
+                                       ncol=2))
+
+table1_univariate$X1 <- paste0(table1_matched[[1]]," (",table1_matched[[2]],")")
+table1_univariate$X2 <- paste0(table1_unmatch[[1]]," (",table1_unmatch[[2]],")")
+
+colnames(table1_univariate) <- c("Matched","Unmatched")
+rownames(table1_univariate) <- c(tbl1_cont,catVarNames_byCat)
+

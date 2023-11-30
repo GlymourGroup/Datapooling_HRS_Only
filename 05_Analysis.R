@@ -21,7 +21,7 @@ d$young_tv_long<-readRDS("../../DP_HRS_Only/HRS_young.rds")
 #
 
 ## Instructions ----
-instructions <- dget("Instructions/Instructions_01.R")
+instructions <- dget("Instructions/Instructions_02.R")
 
 
 ## Var Order ----
@@ -52,12 +52,14 @@ out_temp <- d$old %>%
 
 ## Load in the matched data set  ----
 
-matched_set<-readRDS("../../DP_HRS_Only/Full_MatchedData.RDS")
+matched_set<-readRDS("../../DP_HRS_Only/QCd_MatchedData_IDs.RDS")
 
-# Subset to match what would have been the distance scores only
-matched_set <- matched_set %>% 
-  select(CASE_ID_OLD_RA,Wave_OLD,CASE_ID_HRS_RA,
-         Year_young,dist_z_weighted)
+# # Subset to match what would have been the distance scores only
+# matched_set <- matched_set %>% 
+#   select(CASE_ID_OLD_RA,Wave_OLD,CASE_ID_HRS_RA,
+#          Year_young,dist_z_weighted)
+
+# Where new = dist_z_weighted
 
 ## create permutation group ----
 set.seed(123) # may not be needed as not random?
@@ -65,13 +67,13 @@ matched_set <- matched_set %>%
   # Group by HRS Participant
   group_by(CASE_ID_OLD_RA) %>%
   # and randomly select one of their matched NLSY Pair
-  mutate(permutation_id = sample(1:5,size = n()),
+  mutate(permutation_id = sample(1:10,size = n()),
          # count how many nlsy pairs they have
          n= n()) %>%
   ungroup() 
 
 
-## Exposure Variable: alcohol categories ----
+## Exposure Variable: BMI in 1994 ----
 exp_temp <- d$young %>% select(CASE_ID_HRS_RA, BMI_HRS_2)
 
 # now join with young
@@ -109,7 +111,7 @@ models <- list()
 analytic <- analytic %>% filter(!is.na(GENHEALTH_HRS_14))
 
 ## Loop through each permutation ----
-for (i in 1:5){
+for (i in 1:10){
   cat(paste0("running permutation #", i,"\n"))
   
   # Subset data to permutation
@@ -154,8 +156,3 @@ rubin$final_variance <- coef_variance + average_var
 cat("Saving Rubin's Rules \n")
 saveRDS(rubin,
         file.path("../../DP_HRS_Only/Results/RubinsRules.RDS"))
-
-
-# Gold Standard ----
-# Of those who were complete cases (have exposure and outcome measured),
-# use the participants that were found to have matches. 
