@@ -1,17 +1,17 @@
 # Instructions file
 # Start with a minimal set of variables to match on
-# Do not match on outcome
+# But see what happens when we remove critical mediators (exposure and mediator)
 
 list(
   distVars = c(
     #"Year",
     #"HEIGHT", "WEIGHT", 
-    "BMI"#,
+    #"BMI",
     #"GENHEALTH"#,  factors
     # 'INCOME_PP_LOG10',
     # 'CESD_NEW6PT',
     # 'SYSTOLIC_BP'#, 'PULSE' 'DIASTOLIC_BP',
-    ),
+  ),
   
   exact = c(
     "FEMALE", 
@@ -20,7 +20,7 @@ list(
     # "RELIGION",
     # #"MILITARY",
     # "EDU_NEW",'DAD_EDU','MOM_EDU'
-    ),
+  ),
   
   exact_timevarying = c(
     # "ALC_STATUS", # collpased from ever and now
@@ -30,7 +30,7 @@ list(
     # "VIG_EXERCISE", 
     # 'DIABETES','HYPERTENSION','HEARTPROB', # removed CANCER
     # 'SMK_STATUS' # collapsed from ever and now
-    ),
+  ),
   
   exact_HRS_timevarying = list(
     AGEINTERVIEW = 5
@@ -40,4 +40,3 @@ list(
 
 
 
- 

@@ -1,0 +1,178 @@
+---
+title: "99 Simulation Applied Example"
+author: "Peter Buto"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::pdf_document:
+    fig_caption: yes
+    includes:
+      in_header: preamble-latex.tex
+---
+
+```{r setup, include=FALSE}
+
+# Clear Environment
+rm(list=ls())
+gc()
+
+# Libraries
+library("tidyverse")
+library("ggplot2")
+library("kableExtra")
+
+# Directories
+dir <- list(
+  NA_table   = file.path("~/Documents/DP_HRS_Only/Tables/")
+)
+
+# IMPORT DATA/TABLES
+input <- list(
+  regresult = read.csv(file.path(dir$NA_table, "MainResults.csv")),
+  figure1 = readRDS(file.path(dir$NA_table, "Figure1.RDS")),
+  nTracker = readRDS(file.path(dir$NA_table, "../nTracker.RDS")),
+  tbl1 = readRDS(file.path(dir$NA_table, "Table1_List.RDS")),
+  tbl_dist = read.csv("../../DP_HRS_Only/Tables/DistanceTable.csv"),
+  tbl_means = read.csv("../../DP_HRS_Only/Tables/Matched_Cohort_Means.csv"),
+  tbl_sds = read.csv("../../DP_HRS_Only/Tables/Matched_Cohort_SDs.csv")
+)
+
+# Clean up data frames
+
+# Regression Output
+rownames(input$regresult) <- input$regresult$X
+input$regresult <- input$regresult %>% 
+  rename(`No Mediators` = Instructions_03.R,
+         `GS - No Mediators` = Instructions_03.R_TRUTH,
+         `BMI` = Instructions_02.R,
+         `GS - BMI` = Instructions_02.R_TRUTH,
+         `GENHEALTH` = Instructions_01.R,
+         `GS - GENHEALTH` = Instructions_01.R_TRUTH,
+         `Both Mediators` = Instructions_00.R,
+         `GS - Both Mediators` = Instructions_00.R_TRUTH) %>%
+  select(`No Mediators`, `GS - No Mediators`, 
+         `BMI`, `GS - BMI`,
+         `GENHEALTH`, `GS - GENHEALTH`,
+         `Both Mediators`, `GS - Both Mediators`
+         )
+
+# Sample Size Tracker
+input$nTracker <- input$nTracker %>% 
+  rename(`No Mediators` = Instructions_03.R,
+         `BMI` = Instructions_02.R,
+         `GENHEALTH` = Instructions_01.R,
+         `Both Mediators` = Instructions_00.R) %>%
+  select(`No Mediators`, `BMI`, `GENHEALTH`, `Both Mediators`)
+
+# Table 1
+input$table1 <- cbind(input$tbl1$Instructions_03.R, 
+                      input$tbl1$Instructions_02.R, 
+                      input$tbl1$Instructions_01.R, 
+                      input$tbl1$Instructions_00.R)
+
+# Table means
+rownames(input$tbl_means) <- input$tbl_means$X
+input$tbl_means <- input$tbl_means %>% 
+  select(-X)
+
+# Table Distance
+rownames(input$tbl_dist) <- input$tbl_dist$X
+input$tbl_dist <- input$tbl_dist %>% 
+  select(-X) %>%
+  rename(`BMI` = Instructions_02.R,
+         `GENHEALTH` = Instructions_01.R,
+         `Both Mediators` = Instructions_00.R)
+  
+
+```
+
+\newpage 
+
+# Introduction
+
+This analysis intends to respond to reviewer comments on the Simulation Paper. It applies to data pooling approach in the HRS sample where we know participants' values over a span of nearly 30 years. 
+
+# Cohorts
+
+We took the HRS cohort and selected participants whose first visit was in 1992 and had follow-up visits in 1994, 2008, and 2018. We then randomly split the HRS cohort into two cohorts and masked half of their data: 
+
+  - "young cohort" uses data from waves from 2008 and earlier 
+  - "older cohort" uses data from waves from 2008 and later
+
+# Overview of matching strategy
+
+Similar to the alcohol analysis, this analysis runs into the variable-sample size trade off. To circumvent the selection of variables, we started with a minimal set of variables to match on per Katrina's recommendations. 
+
+In this case, we matched on core demographic features: sex, race/ethnicity, and age and only matched on `important` mediators: BMI (exposure) and General Health recorded (outcome) in 2008 (matching year). We tracked the sample size at each step of the process (Table 1)
+
+```{r, echo=FALSE}
+input$nTracker %>% 
+  kable(caption = "Sample Size Tracker") %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position"))
+```
+
+# Regression Results
+
+We then ran regressions in the pooled data with age, race/ethnicity, and sex as co-variates. For comparisons, we then ran the same analysis in those who were matched, labeled "Gold Standard". Results (Table 2) were largely similar between the two.
+
+```{r, echo=FALSE}
+input$regresult %>% 
+  kable(caption = "Regression Results",
+        "latex",
+        booktabs = T,
+        col.names = rep(c("Pooled","Truth"),4)) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "GENHEALTH" = 2, 
+                     "Both Mediators" = 2))
+```
+
+### Figure 1. Effect Estimates by Matching Set and Source
+```{r, echo=FALSE}
+suppressWarnings(print(input$figure1))
+```
+
+\newpage 
+# QC
+
+Mean values for the distance variables were largely the same in the younger and older cohorts across each of the four matching sets. 
+
+```{r, echo=FALSE}
+input$tbl_means %>% 
+  kable(caption = "Mean Values: Old vs Young",
+        "latex",
+        booktabs = T,
+        col.names = rep(c("Old","Young"),4)) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" "=1, "Both Mediators" = 2, "GENHEALTH" = 2, "BMI" = 2, 
+                     "No Mediators" = 2))
+```
+
+
+The distance between the matched variables can be seen in the following table. 
+
+```{r, echo=FALSE}
+input$tbl_dist %>% 
+  kable(caption = "Average distance in distance variables",
+        "latex",
+        booktabs = T) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position"))
+```
+
+In previous attempts, there were concerns as to who was getting selected for the matches. We compare the demographics of those who were matched to those that were not among participants randomly assigned to the `Older` cohort and.
+
+```{r, echo=FALSE}
+input$table1 %>% 
+  kable(caption = "Matched Vs Unmatched",
+        "latex",
+        booktabs = T,
+        col.names = rep(c("Matched","Unmatched"),4)) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "GENHEALTH" = 2, 
+                     "Both Mediators" = 2))
+```
+
+Interestingly females were more likely to get matched than males. Otherwise, those that were matched were largely similar to those who were unmatched with maybe the exception of age. I suspect this may be due to how HRS includes spouses that may either be significantly younger or older than the respondents. 

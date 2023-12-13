@@ -79,3 +79,13 @@ When thinking about diabetes as the outcome, consider:
   Restrict to people w/o diabetes in 2008
   Match on HbA1c
 Alternatively for binary outcomes, can consider current depression?
+
+============
+11/30/2023
+
+Join in BMI_HRS_2 to the table1_univariate comparing matched and unmatched participants. 
+
+============
+12/06/2023
+
+Go on with different outcomes. Use older analyses to see what covariates we could possibly use to improve the matching. 

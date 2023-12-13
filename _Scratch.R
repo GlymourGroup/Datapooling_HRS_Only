@@ -42,3 +42,46 @@ cc <- d$old %>% select(CASE_ID_OLD_RA,  ends_with("_RA"),
                        -starts_with("COG"))
 
 table(complete.cases(cc))
+
+
+
+# Scott recommended the following code for seomthing similar to tbl1 (06_output)
+
+# TABLE 1 ----
+d_gold_unmatched <- d_gold%>%
+  filter(!(CASE_ID_HRS_RA %in% matched_data$CASE_ID_OLD_RA))
+
+summary(d_gold_subset %>% 
+          select(c(paste0(c(instructions$distVars, 
+                            instructions$exact_timevarying),
+                          "_HRS_9"),
+                   paste0(instructions$exact, "_HRS_RA"))))
+
+
+exact_uniquevals <- list()
+# Calculate descriptive statistics for each variable
+for(var in c(paste0(instructions$exact_timevarying, "_HRS_9"),
+             paste0(instructions$exact, "_HRS_RA"))){
+  # Go through each level of the exact variable
+  exact_uniquevals[[var]] <- unique(d_gold_subset[[var]])
+}
+exact_TV_combs <-  expand.grid(exact_uniquevals)
+
+exact_TV_combs$comb_index <- row_number(exact_TV_combs)
+
+combo <- left_join(d_gold_unmatched, exact_TV_combs)
+
+temp <- combo %>% 
+  group_by(comb_index) %>%
+  summarise(n = n()) %>%
+  ungroup()
+
+exact_TV_combs <- left_join(exact_TV_combs, temp)
+
+combo_matched <- left_join(d_gold_subset, exact_TV_combs)
+temp_matched <- combo_matched%>% 
+  group_by(comb_index) %>%
+  summarise(n_matched = n()) %>%
+  ungroup()
+
+exact_TV_combs <- left_join(exact_TV_combs, temp_matched)
