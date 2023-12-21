@@ -7,235 +7,71 @@ gc()
 
 # Libraries
 library("tidyverse")
-library("ggplot2")
 
 ## Options ----
 n_dec <- 4
 
 # Load Data ----
-
-## Wide Data ----
 d <- list()
-d$old <- readRDS("../../DP_HRS_Only/HRS_old_wide.rds")
-d$young<-readRDS("../../DP_HRS_Only/HRS_young_wide.rds")
 
-## Sample Size Tracker ----
-nTracker <- readRDS("../../DP_HRS_Only/nTracker.RDS")
+# Full Data (prior to subset)
+d$og_long <- readRDS("../../DP_HRS_Only/HRS_Full_OG.rds")
+d$og_wide <- readRDS("../../DP_HRS_Only/HRS_wide.rds")
 
+# Subset data
+d$long <- readRDS("../../DP_HRS_Only/Long_Data.rds")
+d$wide <- readRDS("../../DP_HRS_Only/Wide_Data.rds")
 
-## Var Order ----
-var_weights <- readRDS("../../DP_HRS_Only/Weights.RDS")
-var_weights$total$Instructions_00.R$GENHEALTH_HRS_14 <- 
-  var_weights$total$Instructions_00.R$GENHEALTH_HRS_14[order(unlist(var_weights$total$Instructions_00.R$GENHEALTH_HRS_14),
-                                                             decreasing=TRUE)]
-# Remove AGEINTERVIEW
-var_weights$total$Instructions_00.R$GENHEALTH_HRS_14<-
-  var_weights$total$Instructions_00.R$GENHEALTH_HRS_14[names(var_weights$total$Instructions_00.R$GENHEALTH_HRS_14) 
-                                                       != "AGEINTERVIEW"]
-var_order <- names(var_weights$total$Instructions_00.R$GENHEALTH_HRS_14)
+# "TRUTH"
+d$gold <- readRDS("../../DP_HRS_Only/Wide_Data.rds")
 
-## Instruction Sets ----
-## Instructions ----
-instruction_sets <- list()
-for(instructions in list.files("Instructions/")){
-  instruction_sets[[instructions]] <- dget(paste0("Instructions/",instructions))
-}
-
-## Matched Sets ----
-matched_data <- readRDS("../../DP_HRS_Only/QCd_MatchedData.RDS")
+## matched sets ----
+matched_sets<-readRDS("../../DP_HRS_Only/QCd_MatchedData.RDS")
 
 ## Results ----
 
 # Get the coefficients from rubin 
 rubin<- readRDS("../../DP_HRS_Only/Results/RubinsRules.RDS")
 
-# TABLES ----
+# Parameters ----
+model_info <- read.csv("../../DP_HRS_Only/outcome_info.csv")
+row.names(model_info) <- model_info$outcome
 
-## UNIVARIATE TABLE(s) ----
+outcomes <- c("DIABETES", "GENHEALTH", "SYSTOLIC_BP")
 
-# Initiate lists to store the cohort-specific means
-tbl_means<-as.data.frame(matrix(nrow=0, 
-                                ncol=2*(length(matched_data))))
-names(tbl_means) <- c("Instructions_00.R_OLD", "Instructions_00.R_young",
-                      "Instructions_01.R_OLD", "Instructions_01.R_young",
-                      "Instructions_02.R_OLD", "Instructions_02.R_young",
-                      "Instructions_03.R_OLD", "Instructions_03.R_young")
-
-# Duplicate for the SD
-tbl_sds <- tbl_means
-
-# Get the mean and standard deviation for each matching variable within each set
-
-for(set in names(matched_data)[1:length(matched_data)]){
-  # Count the number of observations for this dataset
-  n_exact <- nrow(matched_data[[set]])
-  # Calculate descriptive statistics for each variable
-  for(cohort in (c("_OLD","_young"))){
-    for(var in instruction_sets$Instructions_00.R$distVars){
-      # If the variable is an exact variable, calc the n & proportion
-      if(var %in% instruction_sets$Instructions_00.R$exact_timevarying){
-        # Go through each level of the exact variable
-        var_cohort <- paste0(var,cohort)
-        for(varValue in unique(matched_data[[set]][[var_cohort]])){
-          # Count the number of observations at that level
-          n_value <- ifelse(is.na(varValue),
-                            sum(is.na(matched_data[[set]])),
-                            sum(matched_data[[set]][[var_cohort]]==varValue,
-                                na.rm=TRUE))
-          # And the proportion of the observations with that level
-          p <- n_value/n_exact
-          
-          # Save Results to Exact_tracker
-          tbl_means[paste0(var,": ",varValue),paste0(set,cohort)]<- round(n_value,n_dec)
-          tbl_sds[paste0(var,": ",varValue),paste0(set,cohort)]  <- round(p,n_dec)
-        }
-      }
-      
-      else if(var %in% instruction_sets$Instructions_00.R$distVars){
-        var_cohort <- paste0(var,cohort)
-        tbl_means[var,paste0(set,cohort)]<- round(mean(matched_data[[set]][[var_cohort]],na.rm=TRUE),
-                                      n_dec)
-        tbl_sds[var,paste0(set,cohort)]  <- round(sd(matched_data[[set]][[var_cohort]],  na.rm=TRUE),
-                                      n_dec)
-      }
-    }
+# Instructions ----
+# Import different instruction sets
+instruction_sets <- list()
+for(i in outcomes){
+  for(ii in list.files(paste0("Instructions/",i))){
+    instruction_sets[[i]][[ii]] <- 
+      dget(paste0("Instructions/",i,"/",ii))
   }
 }
-# Repeat for the distances between the distance variables
+rm(i)
+rm(ii)
 
-# Create a table to hold distances
-tbl_dist <- as.data.frame(matrix(nrow=length(instruction_sets$Instructions_00.R$distVars),
-                                 ncol=length(matched_data) - 1)) # last set has none
-names(tbl_dist) <- names(matched_data)[1:length(matched_data)-1]
-row.names(tbl_dist) <- instruction_sets$Instructions_00.R$distVars
+# Var Order ----
+var_weights <- readRDS("../../DP_HRS_Only/Weights.RDS")
 
-# for each matched set, 
-for(set in names(matched_data)[1:length(matched_data)-1]){
-  # Loop over distance variables 
-  for(var in var_order[var_order %in% instruction_sets$Instructions_00.R$distVars]){
-    # And calculate the mean and SD
-    var_dist <- paste0(var,"_dist_QC")
-    tbl_dist[var,set]<-round(mean(matched_data[[set]][[var_dist]], na.rm=TRUE),
-                                n_dec)
-    tbl_dist[var,set]  <-round(sd(matched_data[[set]][[var_dist]], na.rm=TRUE),
-                                n_dec)
+var_order <- list()
+# Loop through each outcome and instruction set
+for(out in outcomes){
+  for(instructions in names(instruction_sets[[out]])){
+    # Order variables by magnitude 
+    var_weights$total[[out]][[instructions]] <-
+      var_weights$total[[out]][[instructions]][order(unlist(var_weights$total[[out]][[instructions]]),
+                                                     decreasing = TRUE)]
+    
+    # Remove AGEINTERVIEW
+    var_weights$total[[out]][[instructions]]$AGEINTERVIEW  <-NULL
+    
+    var_order[[out]][[instructions]] <- 
+      names(var_weights$total[[out]][[instructions]])
   }
 }
 
-
-
-# Write out CSV
-write.csv(tbl_dist,"../../DP_HRS_Only/Tables/DistanceTable.csv")
-write.csv(tbl_means,"../../DP_HRS_Only/Tables/Matched_Cohort_Means.csv")
-write.csv(tbl_sds,"../../DP_HRS_Only/Tables/Matched_Cohort_SDs.csv")
-
-
-## Matched Sample Size Tracker ----
-# ADD THIS IN THE MATCHING SCRIPT
-# nTracker <- as.data.frame(t(as.data.frame(nTracker)))
-# names(nTracker) <- "n"
-# nTracker[nrow(nTracker)+1,"n"] <- length(unique(matched_data$CASE_ID_OLD_RA))
-# rownames(nTracker)[rownames(nTracker) == "9"] <- "OLD_postcutoff" 
-# 
-# write.csv(nTracker, "../../DP_HRS_Only/Tables/nTracker.csv")
-
-## Regression Tables ----
-
-### Initiate table ----
-rubin_means<-data.frame(matrix(nrow=length(rubin$Instructions_00.R$coef_mean),
-                               ncol=length(matched_data)))
-colnames(rubin_means) <- names(matched_data)
-rownames(rubin_means) <- names(rubin$Instructions_00.R$coef_mean)
-
-rubin_sds <- rubin_means
-
-### Extract the coefficient and sds ----
-for(set in names(matched_data)){
-  rubin_means[[set]] <- round(rubin[[set]]$coef_mean, n_dec)
-  rubin_sds[[set]] <- round(sqrt(rubin[[set]]$final_variance), n_dec)
-}
-
-### GOLD STANDARD ----
-d_gold <- readRDS("../../DP_HRS_Only/HRS_wide.rds")
-# Standardize age
-d_gold$age_dec50 = (d_gold$AGEINTERVIEW_HRS_14-50)/10
-
-d_gold_sets <- list()
-m_gold <- list()
-
-for(set in names(matched_data)){
-  d_gold_sets[[set]] <- d_gold %>% 
-    filter(CASE_ID_HRS_RA %in% matched_data[[set]]$CASE_ID_OLD_RA)
-  
-  m_gold[[set]] <- as.data.frame(coef(summary(lm(GENHEALTH_HRS_14 ~ BMI_HRS_2 +
-                                                   age_dec50 + FEMALE_HRS_RA + 
-                                                   RACE_ETH_HRS_RA, 
-                                                 data=d_gold_sets[[set]]))))
-}
-
-
-### Final Results Table ----
-rubin_cleaned<-data.frame(matrix(nrow=length(rubin$Instructions_00.R$coef_mean),
-                               ncol=length(matched_data)*2))
-rownames(rubin_cleaned) <- names(rubin$Instructions_00.R$coef_mean)
-colnames(rubin_cleaned) <- c(names(matched_data), paste0(names(matched_data),"_TRUTH"))
-
-lb <- rubin_cleaned
-ub <- rubin_cleaned
-
-for(set in names(matched_data)){
-  rubin_cleaned[[set]] <- 
-    paste0(rubin_means[[set]]," (",
-           round(rubin_means[[set]]-1.96*(rubin_sds[[set]]), n_dec), ",",
-           round(rubin_means[[set]]+1.96*(rubin_sds[[set]]), n_dec), ")")
-  
-  rubin_cleaned[[paste0(set,"_TRUTH")]] <- 
-    paste0(round(m_gold[[set]]$Estimate, n_dec), " (",
-           round(m_gold[[set]]$Estimate-1.96*m_gold[[set]]$`Std. Error`,n_dec),
-           ",",
-           round(m_gold[[set]]$Estimate+1.96*m_gold[[set]]$`Std. Error`,n_dec),
-           ")")
-  
-  lb[[set]] <- round(rubin_means[[set]]-1.96*(rubin_sds[[set]]), n_dec)
-  ub[[set]] <- round(rubin_means[[set]]+1.96*(rubin_sds[[set]]), n_dec)
-  
-  lb[[paste0(set,"_TRUTH")]] <- round(m_gold[[set]]$Estimate-1.96*(m_gold[[set]]$`Std. Error`), n_dec)
-  ub[[paste0(set,"_TRUTH")]] <- round(m_gold[[set]]$Estimate+1.96*(m_gold[[set]]$`Std. Error`), n_dec)
-}
-
-### Write results to .csv ----
-
-# Combined
-write.csv(rubin_cleaned, "../../DP_HRS_Only/Tables/MainResults.csv")
-
-
-
-
-## Table 1: Matched vs Unmatched ----
-
-# Import original data before splitting
-d$OG <- readRDS("../../DP_HRS_Only/HRS_recoded.RDS")
-# append BMI from 1994 to old data
-d$old <- left_join(d$old,
-                   d$OG %>% 
-                     select(CASE_ID_HRS_RA, BMI_HRS_2) %>%
-                     rename(CASE_ID_OLD_RA = CASE_ID_HRS_RA)
-)
-
-tbl1_cat <- c("FEMALE_HRS_RA", "RACE_ETH_HRS_RA")
-tbl1_cont<- c("AGEINTERVIEW_HRS_9", "BMI_HRS_2", "GENHEALTH_HRS_14")
-
-# Create placeholders for categorical variables and their values
-# initiate an empty vector
-catVarNames_byCat <- c()
-# Then loop through each categorical variable
-for(cat in tbl1_cat){
-  # and identify the unique values of that variable
-  uniqueCats <- setdiff(unique(d$old[,cat]),NA)
-  # store a combination of "variable|value" in catVarNames_byCat
-  catVarNames_byCat <- c(catVarNames_byCat,paste0(cat,"|",uniqueCats))
-}
-
+# Functions ----
 get_univariate_table <- function(d){
   # Initiate data frame of the numeric and categorical vars
   table_univariate <- data.frame(matrix(nrow=length(c(tbl1_cont,
@@ -258,32 +94,186 @@ get_univariate_table <- function(d){
   return(table_univariate)
 }
 
-# Create a "table 1" for each matched set
-tbl1_list <- list()
-for(set in names(matched_data)){
+# UNIVARIATE TABLE(s) ----
+
+list_means<- list()
+list_sds  <- list()
+list_dist <- list()
+
+# Loop through each outcome,
+for(out in outcomes){
+  # Initiate lists to store the cohort-specific means
+  tbl_means<-as.data.frame(matrix(nrow=0, 
+                                  ncol=2*(length(matched_sets[[out]]))))
+  names(tbl_means) <- c("Instructions_NONE.R_OLD","Instructions_NONE.R_young",
+                        "Instructions_EXP.R_OLD", "Instructions_EXP.R_young",
+                        "Instructions_OUT.R_OLD", "Instructions_OUT.R_young",
+                        "Instructions_BOTH.R_OLD","Instructions_BOTH.R_young")
   
-  # create `matched` indicator
-  temp <- d$old %>% mutate(
-    matched=case_when(CASE_ID_OLD_RA %in% matched_data[[set]]$CASE_ID_OLD_RA ~1,
-                      !(CASE_ID_OLD_RA%in%matched_data[[set]]$CASE_ID_OLD_RA)~0)
-  )
+  # Duplicate for the SD
+  tbl_sds <- tbl_means
   
-  # pull results for matched/unmatched
-  temp_matched <- round(get_univariate_table(temp %>% filter(matched==1)),n_dec)
-  temp_unmatch <- round(get_univariate_table(temp %>% filter(matched==0)),n_dec)
+  # Get the mean & SD for each matching variable within each set
+  for(set in names(matched_sets[[out]])){
+    # Count the number of observations for this dataset
+    n_exact <- nrow(matched_sets[[out]][[set]])
+    # Calculate descriptive statistics for each variable
+    for(cohort in (c("_OLD","_young"))){
+      for(var in instruction_sets[[out]]$Instructions_BOTH.R$distVars){
+        # If the variable is an exact variable, calc the n & proportion
+        var_cohort <- paste0(var,cohort)
+        
+        tbl_means[var,paste0(set,cohort)] <- 
+          round(mean(matched_sets[[out]][[set]][[var_cohort]],na.rm=TRUE),n_dec)
+        
+        tbl_sds[var,paste0(set,cohort)]  <- 
+          round(sd(matched_sets[[out]][[set]][[var_cohort]],  na.rm=TRUE),n_dec)
+      }
+    }
+  }
+  # Repeat for the distances between the distance variables
   
-  tbl1_list[[set]] <- data.frame(matrix(nrow=length(c(tbl1_cont,
-                                                      catVarNames_byCat)),
-                                        ncol=2))
+  # Create a table to hold distances
+  tbl_dist <- 
+    as.data.frame(matrix(nrow=length(instruction_sets[[out]]$Instructions_BOTH.R$distVars),
+                         ncol=length(matched_sets[[out]]) - 1)) # ignore 'none'
+  names(tbl_dist) <- c("Instructions_EXP.R",
+                       "Instructions_OUT.R",
+                       "Instructions_BOTH.R")
+  row.names(tbl_dist) <- instruction_sets[[out]]$Instructions_BOTH.R$distVars
   
-  tbl1_list[[set]]$X1 <- paste0(temp_matched[[1]]," (",temp_matched[[2]],")")
-  tbl1_list[[set]]$X2 <- paste0(temp_unmatch[[1]]," (",temp_unmatch[[2]],")")
-  
-  colnames(tbl1_list[[set]]) <- c("Matched","Unmatched")
-  rownames(tbl1_list[[set]]) <- c(tbl1_cont,catVarNames_byCat)
+  # for each matched set, 
+  for(set in c("Instructions_EXP.R","Instructions_OUT.R","Instructions_BOTH.R")){
+    # Loop over distance variables 
+    for(var in instruction_sets[[out]]$Instructions_BOTH.R$distVars){
+      # And calculate the mean and SD
+      var_dist <- paste0(var,"_dist_QC")
+      tbl_dist[var,set]<-round(mean(matched_sets[[out]][[set]][[var_dist]], 
+                                    na.rm=TRUE),
+                               n_dec)
+      tbl_dist[var,set]  <-round(sd(matched_sets[[out]][[set]][[var_dist]], 
+                                    na.rm=TRUE),
+                                 n_dec)
+    }
+  }
+  list_means[[out]]<- tbl_means
+  list_sds[[out]]  <- tbl_sds
+  list_dist[[out]] <- tbl_dist
 }
 
-saveRDS(tbl1_list, "../../DP_HRS_Only/Tables/Table1_List.RDS")
+
+# Write out CSV
+saveRDS(list_dist,"../../DP_HRS_Only/Tables/DistanceTable.rds")
+saveRDS(list_means,"../../DP_HRS_Only/Tables/Matched_Cohort_Means.rds")
+saveRDS(list_sds,"../../DP_HRS_Only/Tables/Matched_Cohort_SDs.rds")
+
+# Regression Tables ----
+rubin_cleaned  <- list()
+rubin_means_lt <- list()
+rubin_sds_list <- list()
+rubin_lb_list <- list()
+rubin_ub_list <- list()
+
+m_gold <- list()
+
+for(out in outcomes){
+  out_hrs_14 <- paste0(out,"_HRS_14")
+  ### Initiate table ----
+  rubin_means <- 
+    data.frame(matrix(nrow=length(rubin[[out]]$Instructions_BOTH.R$coef_mean),
+                                 ncol=length(matched_sets[[out]])))
+  colnames(rubin_means) <- names(matched_sets[[out]])
+  rownames(rubin_means) <- names(rubin[[out]]$Instructions_BOTH.R$coef_mean)
+  
+  rubin_sds <- rubin_means
+  
+  ### Extract the coefficient and sds ----
+  for(set in names(matched_sets[[out]])){
+    rubin_means[[set]]<- round(rubin[[out]][[set]]$coef_mean, n_dec)
+    rubin_sds[[set]]  <- round(sqrt(rubin[[out]][[set]]$final_variance), n_dec)
+  }
+  
+  ### GOLD STANDARD ----
+  # Standardize age
+  d$gold[[out_hrs_14]]$age_dec50 = 
+    (d$gold[[out_hrs_14]]$AGEINTERVIEW_HRS_14-50)/10
+  
+  d_gold_sets <- list()
+  
+  for(set in names(matched_sets[[out]])){
+    
+    # Subset TRUE data to those who were matched in this set
+    d_gold_sets[[set]] <- 
+      d$gold[[out_hrs_14]] %>% 
+      filter(CASE_ID_HRS_RA %in% matched_sets[[out]][[set]]$CASE_ID_OLD_RA)
+    
+    # Construct a regression formula 
+    type <- model_info[out,"type"]
+    
+    ## Linear Regression
+    if(type %in% c("score", "cont")){
+      form <- as.formula(paste0(out_hrs_14," ~ ", "BMI_HRS_2 +
+                                 age_dec50 + FEMALE_HRS_RA + 
+                                 RACE_ETH_HRS_RA"))
+      m_gold[[out]][[set]] <- as.data.frame(coef(summary(lm(form, 
+                                                     data=d_gold_sets[[set]]))))
+      
+    ## Logistic Regression
+    }else if(type == "binary"){
+      form <- as.formula(paste0(out_hrs_14," ~ ", "BMI_HRS_2 +
+                                 age_dec50 + FEMALE_HRS_RA + 
+                                 RACE_ETH_HRS_RA"))
+      m_gold[[out]][[set]] <- as.data.frame(coef(summary(glm(form, 
+                                                      data=d_gold_sets[[set]], 
+                                                      family = "binomial"))))
+    }else{cat("Unrecognized type \n")}
+  }
+  
+  
+  ### Final Results Table ----
+  rubin_cleaned[[out]] <- 
+    data.frame(matrix(nrow=length(rubin[[out]]$Instructions_BOTH.R$coef_mean),
+                                   ncol=length(matched_sets[[out]])*2))
+  rownames(rubin_cleaned[[out]]) <- 
+    names(rubin[[out]]$Instructions_BOTH.R$coef_mean)
+  colnames(rubin_cleaned[[out]]) <- 
+    c(names(matched_sets[[out]]), 
+      paste0(names(matched_sets[[out]]),"_TRUTH"))
+  
+  lb <- rubin_cleaned[[out]]
+  ub <- rubin_cleaned[[out]]
+  
+  for(set in names(matched_sets[[out]])){
+    rubin_cleaned[[out]][[set]] <- 
+      paste0(rubin_means[[set]]," (",
+             round(rubin_means[[set]]-1.96*(rubin_sds[[set]]), n_dec), ",",
+             round(rubin_means[[set]]+1.96*(rubin_sds[[set]]), n_dec), ")")
+    
+    rubin_cleaned[[out]][[paste0(set,"_TRUTH")]] <- 
+      paste0(round(m_gold[[out]][[set]]$Estimate, n_dec), " (",
+             round(m_gold[[out]][[set]]$Estimate-1.96*m_gold[[out]][[set]]$`Std. Error`,n_dec),
+             ",",
+             round(m_gold[[out]][[set]]$Estimate+1.96*m_gold[[out]][[set]]$`Std. Error`,n_dec),
+             ")")
+    
+    lb[[set]] <- round(rubin_means[[set]]-1.96*(rubin_sds[[set]]), n_dec)
+    ub[[set]] <- round(rubin_means[[set]]+1.96*(rubin_sds[[set]]), n_dec)
+
+    lb[[paste0(set,"_TRUTH")]] <- round(m_gold[[out]][[set]]$Estimate-1.96*(m_gold[[out]][[set]]$`Std. Error`), n_dec)
+    ub[[paste0(set,"_TRUTH")]] <- round(m_gold[[out]][[set]]$Estimate+1.96*(m_gold[[out]][[set]]$`Std. Error`), n_dec)
+    
+    rubin_means_lt[[out]] <- rubin_means
+    rubin_sds_list[[out]] <- rubin_sds
+    rubin_lb_list[[out]]  <- lb
+    rubin_ub_list[[out]]  <- ub
+  }
+}
+### Write results to .csv ----
+saveRDS(rubin_cleaned, "../../DP_HRS_Only/Tables/MainResults.rds")
+
+
+
+
 
 # Use in case people want to talk about discrepancy
 # ageplot <- d$old %>%
@@ -295,49 +285,115 @@ saveRDS(tbl1_list, "../../DP_HRS_Only/Tables/Table1_List.RDS")
 
 # Line Plot with Error Bars ----
 
-## Create data frame ----
-fig1 <- data.frame(matrix(nrow=8,
-                          ncol=5))
-names(fig1) <- c("Source", "Model", "Estimate", "LB", "UB")
-fig1$Source <- rep(c("Pooled", "Truth"), 4)
-fig1$Model  <- c(rep("No Mediators", 2),
-                 rep("BMI", 2),
-                 rep("GENHEALTH", 2),
-                 rep("Both Mediators", 2))
-fig1$Model <- factor(fig1$Model, 
-                     levels = c("No Mediators",
-                                "BMI",
-                                "GENHEALTH",
-                                "Both Mediators"))
-fig1$Estimate <- c(rubin_means$Instructions_03.R[2],
-                   m_gold$Instructions_03.R$Estimate[2],
-                   rubin_means$Instructions_02.R[2],
-                   m_gold$Instructions_02.R$Estimate[2],
-                   rubin_means$Instructions_01.R[2],
-                   m_gold$Instructions_01.R$Estimate[2],
-                   rubin_means$Instructions_00.R[2],
-                   m_gold$Instructions_00.R$Estimate[2])
-fig1$LB <- c(lb$Instructions_03.R[2],
-             lb$Instructions_03.R_TRUTH[2],
-             lb$Instructions_02.R[2],
-             lb$Instructions_02.R_TRUTH[2],
-             lb$Instructions_01.R[2],
-             lb$Instructions_01.R_TRUTH[2],
-             lb$Instructions_00.R[2],
-             lb$Instructions_00.R_TRUTH[2])
-fig1$UB <- c(ub$Instructions_03.R[2],
-             ub$Instructions_03.R_TRUTH[2],
-             ub$Instructions_02.R[2],
-             ub$Instructions_02.R_TRUTH[2],
-             ub$Instructions_01.R[2],
-             ub$Instructions_01.R_TRUTH[2],
-             ub$Instructions_00.R[2],
-             ub$Instructions_00.R_TRUTH[2])
+fig1 <- list()
+plot1<- list()
 
-plot1 <- fig1 %>% ggplot(aes(x = Model, y = Estimate, group = Source, color = Source)) +
-  geom_point(position = position_dodge(width = 0.2)) +
-  geom_errorbar(aes(ymin=LB, ymax=UB), 
-                width=0.2,
-                position =position_dodge(width = 0.2))
+for(out in outcomes){
+  ## Create data frame ----
+  fig1[[out]] <- data.frame(matrix(nrow=8,
+                                   ncol=5))
+  names(fig1[[out]]) <- c("Source", "Model", "Estimate", "LB", "UB")
+  fig1[[out]]$Source <- rep(c("Pooled", "Truth"), 4)
+  fig1[[out]]$Model  <- c(rep("No Mediators", 2),
+                          rep("BMI", 2),
+                          rep(out, 2),
+                          rep("Both Mediators", 2))
+  fig1[[out]]$Model <- factor(fig1[[out]]$Model, 
+                              levels = c("No Mediators",
+                                         "BMI",
+                                         out,
+                                         "Both Mediators"))
+  fig1[[out]]$Estimate <- c(rubin_means_lt[[out]]$Instructions_NONE.R[2],
+                            m_gold[[out]]$Instructions_NONE.R$Estimate[2],
+                            rubin_means_lt[[out]]$Instructions_EXP.R[2],
+                            m_gold[[out]]$Instructions_EXP.R$Estimate[2],
+                            rubin_means_lt[[out]]$Instructions_OUT.R[2],
+                            m_gold[[out]]$Instructions_OUT.R$Estimate[2],
+                            rubin_means_lt[[out]]$Instructions_BOTH.R[2],
+                            m_gold[[out]]$Instructions_BOTH.R$Estimate[2])
+  fig1[[out]]$LB <- c(rubin_lb_list[[out]]$Instructions_NONE.R[2],
+                      rubin_lb_list[[out]]$Instructions_NONE.R_TRUTH[2],
+                      rubin_lb_list[[out]]$Instructions_EXP.R[2],
+                      rubin_lb_list[[out]]$Instructions_EXP.R_TRUTH[2],
+                      rubin_lb_list[[out]]$Instructions_OUT.R[2],
+                      rubin_lb_list[[out]]$Instructions_OUT.R_TRUTH[2],
+                      rubin_lb_list[[out]]$Instructions_BOTH.R[2],
+                      rubin_lb_list[[out]]$Instructions_BOTH.R_TRUTH[2])
+  fig1[[out]]$UB <- c(rubin_ub_list[[out]]$Instructions_NONE.R[2],
+                      rubin_ub_list[[out]]$Instructions_NONE.R_TRUTH[2],
+                      rubin_ub_list[[out]]$Instructions_EXP.R[2],
+                      rubin_ub_list[[out]]$Instructions_EXP.R_TRUTH[2],
+                      rubin_ub_list[[out]]$Instructions_OUT.R[2],
+                      rubin_ub_list[[out]]$Instructions_OUT.R_TRUTH[2],
+                      rubin_ub_list[[out]]$Instructions_BOTH.R[2],
+                      rubin_ub_list[[out]]$Instructions_BOTH.R_TRUTH[2])
+  
+  plot1[[out]] <- fig1[[out]] %>% 
+    ggplot(aes(x = Model, y = Estimate, group = Source, color = Source)) +
+    geom_point(position = position_dodge(width = 0.2)) +
+    geom_errorbar(aes(ymin=LB, ymax=UB), 
+                  width=0.2,
+                  position =position_dodge(width = 0.2))
+  
+}
 
 saveRDS(plot1, "../../DP_HRS_Only/Tables/Figure1.RDS")
+
+
+# Table 1: Matched vs Unmatched ----
+tbl1_list <- list()
+
+# Import original data before splitting
+d$OG <- readRDS("../../DP_HRS_Only/HRS_recoded.RDS")
+
+for(out in outcomes){
+  out_hrs_14 <- paste0(out,"_HRS_14")
+  # append BMI from 1994 to old data
+  d$wide[[paste0(out_hrs_14, "_old")]] <- 
+    left_join(d$wide[[paste0(out_hrs_14, "_old")]],
+              d$OG %>% 
+                select(CASE_ID_HRS_RA, BMI_HRS_2) %>%
+                rename(CASE_ID_OLD_RA = CASE_ID_HRS_RA)
+    )
+  
+  tbl1_cat <- c("FEMALE_HRS_RA", "RACE_ETH_HRS_RA")
+  tbl1_cont<- c("AGEINTERVIEW_HRS_9", "BMI_HRS_2", out_hrs_14)
+  
+  # Create placeholders for categorical variables and their values
+  # initiate an empty vector
+  catVarNames_byCat <- c()
+  # Then loop through each categorical variable
+  for(cat in tbl1_cat){
+    # and identify the unique values of that variable
+    uniqueCats <- setdiff(unique(d$wide[[paste0(out_hrs_14, "_old")]][,cat]),NA)
+    # store a combination of "variable|value" in catVarNames_byCat
+    catVarNames_byCat <- c(catVarNames_byCat,paste0(cat,"|",uniqueCats))
+  }
+  
+  # Create a "table 1" for each matched set
+  for(set in names(matched_sets[[out]])){
+    
+    # create `matched` indicator
+    temp <- d$wide[[paste0(out_hrs_14, "_old")]] %>% mutate(
+      matched=case_when(CASE_ID_OLD_RA %in% matched_sets[[out]][[set]]$CASE_ID_OLD_RA ~1,
+                        !(CASE_ID_OLD_RA%in%matched_sets[[out]][[set]]$CASE_ID_OLD_RA)~0)
+    )
+    
+    # pull results for matched/unmatched
+    temp_matched <- round(get_univariate_table(temp %>% filter(matched==1)),n_dec)
+    temp_unmatch <- round(get_univariate_table(temp %>% filter(matched==0)),n_dec)
+    
+    tbl1_list[[out]][[set]] <- data.frame(matrix(nrow=length(c(tbl1_cont,
+                                                               catVarNames_byCat)),
+                                                 ncol=2))
+    
+    tbl1_list[[out]][[set]]$X1 <- paste0(temp_matched[[1]]," (",temp_matched[[2]],")")
+    tbl1_list[[out]][[set]]$X2 <- paste0(temp_unmatch[[1]]," (",temp_unmatch[[2]],")")
+    
+    colnames(tbl1_list[[out]][[set]]) <- c("Matched","Unmatched")
+    rownames(tbl1_list[[out]][[set]]) <- c(tbl1_cont,catVarNames_byCat)
+  }
+  
+}
+
+saveRDS(tbl1_list, "../../DP_HRS_Only/Tables/Table1_List.RDS")

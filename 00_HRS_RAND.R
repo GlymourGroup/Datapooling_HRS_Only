@@ -203,14 +203,14 @@ desiredVars <- list(
   "COG_NUM_SERIES_HRS" = "r#nsscre", # Calculated number series score (waves 10-13)
 
   # Immediate word Recall:
-  # counts of the number of words from a 10 or 20 word list that were recalled correctly
+  # counts of the number of words  recalled correctly
   # 20 nouns, recalled in any order:
   "COG_RECALL_HRS_W1" = "r1imrc20",  # immediate word recall, wave 1 only
-  "COG_RECALL_HRS_W2_AHD" = "r2aimr10",  # Immediate word recall -AHD93, wave 2 only
-  "COG_RECALL_HRS_W2_HRS" = "r2himr20",  # Immediate word recall -hrs94, wave 2 only
+  "COG_RECALL_HRS_W2_AHD" = "r2aimr10",  # IWC -AHD93, wave 2 only
+  "COG_RECALL_HRS_W2_HRS" = "r2himr20",  # IWC -hrs94, wave 2 only
 
-  # 10 words, randomly assigned TO one of four lists, with a different assignment over four interviews and no overlap with the spouse
-  "COG_RECALL_HRS"    = "r#imrc",    # Immediate word recall, waves 3-13
+  # Randomly assigned TO a list, with a different assignment each interview
+  "COG_RECALL_HRS"    = "r#imrc",    # IWC, waves 3-13
   "COG_RECALL_imp_HRS"= "r#fimrc",   # Imputation flag for immediate word recall
 
   # Delayed Word Recall
@@ -229,11 +229,12 @@ desiredVars <- list(
   "COG_SERIAL7_imp_HRS" = "r#fser7", # imp flag for serial 7
 
   # Backwards Counting
-  # Two points are given if successful on the first try, one if successful on the second, and zero if not successful on either try.
-  "COG_BACKWARDS_HRS" = "r#bwc20", #waves 2-13 0:incorrect, 1:correct 2nd, 2: correct 1st
+  # Two points are given if successful on the first try, 
+  # one if successful on the second, and zero if not successful on either try.
+  "COG_BACKWARDS_HRS" = "r#bwc20", # 0:incorrect, 1:correct 2nd, 2: correct 1st
   "COG_BACKWARDS_imp_HRS"="r#fbwc20", # imp flag
 
-  "COG_BACKWARDS_86_HRS"="r#bwc86", #Waves 3-6 0:incorrect, 1:correct 2nd, 2: correct 1st
+  "COG_BACKWARDS_86_HRS"="r#bwc86", # w3-6 0:incorrect, 1: 2nd, 2: 1st
   "COG_BACKWARDS_86_imp_HRS"="r#bwc86", # imp flag
 
   # Date-naming
@@ -267,7 +268,7 @@ desiredVars <- list(
   "COG_VICEPRES_imp_HRS"  = 'r#fvp',
 
   # Vocabulary
-  # scores for each word (5 total) are perfectly correct (=2), partially correct (=1), and incorrect (0)
+  # scores are perfectly correct (2), partially correct (1), and incorrect (0)
   "COG_VOCAB_HRS" = "r#vocab", # waves 3-13, score 0-10
   "COG_VOCAB_imp_HRS"="r#fvocab", # imputation flag
 
@@ -284,9 +285,9 @@ desiredVars <- list(
   "COG_COG_TOTAL_HRS"    = "r#cogtot",# Waves 3-13
 
   # Proxy
-  "PROXY_INTERV_HRS" = "r#proxy",  # Whether it was a proxy interview, 1 if by proxy
-  "PROXY_RATING_HRS" = "r#prmem",  # Proxy rates respondent's memory (likert 1(excellent)-5(poor), missing wave 1)
-  "PROXY_CHANGE_HRS" = "r#prchmem",# Proxy rates change in memory (likert 1(better)-3(Worse), no wave 1)
+  "PROXY_INTERV_HRS" = "r#proxy",  # 1 if proxy
+  "PROXY_RATING_HRS" = "r#prmem",  # (likert 1(excellent)-5(poor), missing w1)
+  "PROXY_CHANGE_HRS" = "r#prchmem",# (likert 1(better)-3(Worse), no wave 1)
 
   # Wu-Measures
   "WU_SCORE_HRS" = "memimp:",
@@ -319,8 +320,8 @@ for(newVar in names(desiredVars)){
 
       # If the newly created variable (replacing # with i) is found,
       if(oldVar %in% cols){
-        varMap[nrow(varMap)+1,] <- c(oldVar,paste0(newVar,"_",i)) # add new variable name
-        any <- any + 1                                            # and increase count by one
+        varMap[nrow(varMap)+1,] <- c(oldVar,paste0(newVar,"_",i)) # rename
+        any <- any + 1                                            # increment
       }
     }
 
@@ -331,12 +332,12 @@ for(newVar in names(desiredVars)){
 
       # If the newly created variable (replacing # with j) is found,
       if(oldVar %in% cols){
-        varMap[nrow(varMap)+1,] <- c(oldVar,paste0(newVar,"_",j)) # add new variable name
-        any <- any + 1                                            # and increase count by one
+        varMap[nrow(varMap)+1,] <- c(oldVar,paste0(newVar,"_",j)) # rename
+        any <- any + 1                                            # increment
       }
   }
     }else{
-    varMap[nrow(varMap)+1,] <- c(desiredVars[[newVar]],newVar) # add new variable name
+    varMap[nrow(varMap)+1,] <- c(desiredVars[[newVar]],newVar) # rename
     any <- any + 1
   }
   #Make sure the variable was found
@@ -357,12 +358,31 @@ tracker <- tracker %>%
 
 d_out <- left_join(d_out, tracker)
 
+# Biomarker Data ----
+biomarker06 <- haven::read_sav("~/Documents/HRS/biomkr06/biomk06bl_r.sav")
+biomarker06 <- biomarker06 %>% 
+  mutate(CASE_ID_HRS_RA = as.numeric(paste0(HHID, PN)),
+         HbA1c_YEAR = 2006) %>%
+  rename(HbA1c = KA1C_ADJ) %>% 
+  select(CASE_ID_HRS_RA, HbA1c, HbA1c_YEAR)
+
+biomarker08 <- haven::read_sav("~/Documents/HRS/biomkr08/biomk08bl_r.sav")
+biomarker08 <- biomarker08 %>% 
+  mutate(CASE_ID_HRS_RA = as.numeric(paste0(HHID, PN)),
+         HbA1c_YEAR = 2008) %>%
+  rename(HbA1c = LA1C_ADJ) %>% 
+  select(CASE_ID_HRS_RA, HbA1c, HbA1c_YEAR)
+
+biomarker <- rbind(biomarker06, biomarker08)
+
+d_out <- left_join(d_out, biomarker)
+
 # Subset Data ----
 d_out <- d_out %>% 
   # Participants must have started in 1992
   filter(FIRSTIW == 1992,
          # and have 1994 wave data
-         !is.na(INTERVIEW_BEGDT_HRS_2), # because exposure was first measured here
+         !is.na(INTERVIEW_BEGDT_HRS_2), # exposure first measured
          !is.na(INTERVIEW_BEGDT_HRS_8), # Mediator wave
          !is.na(INTERVIEW_BEGDT_HRS_14))# Outcome wave
 

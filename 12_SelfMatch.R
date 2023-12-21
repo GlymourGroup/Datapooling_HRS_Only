@@ -1,3 +1,6 @@
+# The goal of this script is to prep the data to see if we can identify 
+# participant's younger self via datapooling
+
 # Set-up ----
 
 # Clear Environment

@@ -1101,7 +1101,8 @@ hrs <- hrs %>% select(
   starts_with("IMMED_RECALL_"),
   starts_with("DELAY_RECALL_"),
   starts_with("SERIAL_7_"),
-  starts_with("CAGE"))
+  starts_with("CAGE"),
+  starts_with("HbA1c"))
 
 ## Data sets ----
 saveRDS(hrs, file.path("../../DP_HRS_Only/HRS_recoded.RDS"))

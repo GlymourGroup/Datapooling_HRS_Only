@@ -9,8 +9,18 @@ library("tidyverse")
 
 # Load Data ----
 d <- list()
+
+# Main Data set
 d$HRS <- readRDS("../../DP_HRS_Only/HRS_recoded.RDS")
-instructions <- dget("Instructions/Instructions_00.R")
+
+# Instruction set for each outcome
+instructions <- list(
+  GENHEALTH = dget("Instructions/GENHEALTH/Instructions_BOTH.R"),
+  SYSTOLIC_BP=dget("Instructions/SYSTOLIC_BP/Instructions_BOTH.R"),
+  DIABETES  = dget("Instructions/DIABETES/Instructions_BOTH.R")
+)
+# the only instruction sets that actually differ are "BOTH" and "OUT"
+
 
 # Categorize matching vars ----
 
@@ -138,7 +148,14 @@ table(wave_n$nwaves_contributed, useNA='ifany')
 
 hrs_tv_long <- left_join(hrs_tv_long, wave_n)
 
+## Add HbA1c Data to long ----
+hrs_tv_long <- left_join(hrs_tv_long,
+                         d$HRS %>% select(CASE_ID_HRS_RA, HbA1c, HbA1c_YEAR))
+
 # Split the cohort ----
+
+# Participants should be present in: 1994, 2008, 2018
+# having carried forward, we have many more complete cases
 
 ## Make the Data Wide ----
 hrs_tv_wide <- hrs_tv_long %>% 
@@ -153,138 +170,131 @@ hrs_tv_wide <- hrs_tv_long %>%
                   VIG_EXERCISE, #LIGHT_EXERCISE, 
                   SMK_STATUS, #SMOKE_EVER,SMOKE_NOW,
                   ALC_STATUS, #ALCOHOL_EVER, ALCOHOL_NOW,
-                  SYSTOLIC_BP, DIASTOLIC_BP, PULSE
-    ))
+                  SYSTOLIC_BP, DIASTOLIC_BP, PULSE))
 
-# Participants should be present in: 1994, 2008, 2018
+outcomes <- c("DIABETES_HRS_14", "GENHEALTH_HRS_14", "SYSTOLIC_BP_HRS_14")
+# For each outcome
+cc <- list()
+d_long<-list()
+d_wide<-list()
+for(out in outcomes){
+  
+  cc[[out]] <- complete.cases(hrs_tv_wide %>% 
+                                select(CASE_ID_HRS_RA, BMI_HRS_2, all_of(out)))
+  
+  ## Filter to complete cases ----
+  temp <- hrs_tv_wide[cc[[out]],]
+  
+  # Randomly assign participants to the older and younger cohorts
+  set.seed(123)
+  
+  cohort_assignment <-  temp %>% 
+    select(CASE_ID_HRS_RA) %>%
+    mutate(cohort = rbinom(nrow(.), 1, .5))
+  
+  # Merge in the cohort assignment
+  d_long[[out]] <- left_join(hrs_tv_long, cohort_assignment)
+  
+  d_wide[[out]] <- inner_join(d$variables$invariant, temp) 
+  
+  ## Older ----
+  
+  ### Subset ----
+  d_long[[paste0(out,"_old")]] <- d_long[[out]] %>% 
+    filter(Year >= 2008, cohort == 1) %>%
+    rename(CASE_ID_OLD_RA = CASE_ID_HRS_RA)
+  
+  ### Standardize ----
+  instruction_set <- gsub("_HRS_14", "", out)
+  
+  for(distVar in instructions[[instruction_set]]$distVars){
+    d_long[[paste0(out,"_old")]][[paste0(distVar,"_z")]] = scale(d_long[[paste0(out,"_old")]][[distVar]])[,1]
+  }
+  
+  ## Younger  ----
+  
+  ### Subset ----
+  d_long[[paste0(out,"_young")]] <- d_long[[out]] %>% 
+    filter(Year <=2008, cohort == 0)
+  
+  ### Standardize  ----
+  
+  for(i in instructions[[instruction_set]]$distVars){
+    d_long[[paste0(out,"_young")]][[paste0(i,"_z")]] = 
+      (d_long[[paste0(out,"_young")]][[i]] - 
+         mean(d_long[[paste0(out,"_old")]][[i]],na.rm=T))/sd(d_long[[paste0(out,"_old")]][[i]],na.rm=T)
+  }
+  
+  
+  # Recreate Wide Datasets ----
+  
+  ## OLDER ----
+  
+  ### Spread ----
+  d_wide[[paste0(out,"_old")]] <- d_long[[paste0(out,"_old")]] %>% 
+    select(-Year, -ends_with("_z")) %>%
+    pivot_wider(
+      names_from = Wave,
+      names_sep  = "_HRS_",
+      values_from=c(INTERVIEW_BEGDT, AGEINTERVIEW,
+                    MARRIAGE ,INCOME_PP_LOG10,
+                    HEIGHT,WEIGHT,BMI ,CESD_NEW6PT,
+                    DIABETES, HYPERTENSION, HEARTPROB, GENHEALTH, #CANCER, 
+                    VIG_EXERCISE, #LIGHT_EXERCISE, 
+                    SMK_STATUS, #SMOKE_EVER,SMOKE_NOW,
+                    ALC_STATUS, #ALCOHOL_EVER, ALCOHOL_NOW,
+                    SYSTOLIC_BP, DIASTOLIC_BP, PULSE
+      ))
+  
+  ### Join Invariant ----
+  d_wide[[paste0(out,"_old")]] <- inner_join(
+    d$variables$invariant, 
+    d_wide[[paste0(out,"_old")]],
+    join_by(CASE_ID_HRS_RA == CASE_ID_OLD_RA)) %>%
+    rename(CASE_ID_OLD_RA = CASE_ID_HRS_RA)
+  
+  
+  ## younger ----
 
-# Show missingness in mediator and outcome
-summary(hrs_tv_wide %>% select(SYSTOLIC_BP_HRS_9, SYSTOLIC_BP_HRS_14,
-                         GENHEALTH_HRS_9, GENHEALTH_HRS_14,
-                         DIABETES_HRS_9, DIABETES_HRS_14))
-## Complete Cases ----
-# MUST have the exposure AND outcome, not necessarily mediators
-# Find complete cases with regards to relevant data:
-cc <- hrs_tv_wide %>% select(CASE_ID_HRS_RA,
-                       BMI_HRS_2,
-                       SYSTOLIC_BP_HRS_14, GENHEALTH_HRS_14, DIABETES_HRS_14,
-)
-names(cc) # to see if it has the co-variates of interest
-table(complete.cases(cc))
-
-# After carrying forward, we have a lot of complete cases
-# Diabetes:
-table(complete.cases(cc %>% select(-SYSTOLIC_BP_HRS_14, -GENHEALTH_HRS_14)))
-# Systolic BP:
-table(complete.cases(cc %>% select(-GENHEALTH_HRS_14, -DIABETES_HRS_14)))
-# Gen Health
-table(complete.cases(cc %>% select(-DIABETES_HRS_14, -SYSTOLIC_BP_HRS_14)))
-
-# Systolic BP is the limiting outcome
-# We should check all, but for proof of concept, let's start with GENHEALTH
-cc <- cc[complete.cases(cc %>% select(-DIABETES_HRS_14, -SYSTOLIC_BP_HRS_14)),]
-
-## Filter to complete cases ----
-hrs_tv_wide <- hrs_tv_wide %>% filter(CASE_ID_HRS_RA %in% cc$CASE_ID_HRS_RA)
-
-# Randomly assign participants to the older and younger cohorts
-set.seed(123)
-
-cohort_assignment <-  hrs_tv_wide %>% 
-  select(CASE_ID_HRS_RA) %>%
-  mutate(cohort = rbinom(nrow(.), 1, .5))
-
-# Merge in the cohort assignment
-hrs_tv_long <- left_join(hrs_tv_long, cohort_assignment)
-
-hrs_tv_wide <- inner_join(d$variables$invariant, hrs_tv_wide) 
-
-## Older ----
-
-### Subset ----
-hrs_old <- hrs_tv_long %>% 
-  filter(Year >= 2008, cohort == 1) %>%
-  rename(CASE_ID_OLD_RA = CASE_ID_HRS_RA)
-
-# Can we carry forward information in the older subset?
-
-### Standardize ----
-
-for(distVar in instructions$distVars){
-  hrs_old[[paste0(distVar,"_z")]] = scale(hrs_old[[distVar]])[,1]
+  ### Spread ----
+  d_wide[[paste0(out,"_young")]] <- d_long[[paste0(out,"_young")]] %>% 
+    select(-INTERVIEW_BEGDT, -Year,
+           -ends_with("_z")) %>%
+    pivot_wider(
+      names_from = Wave,
+      names_sep  = "_HRS_",
+      values_from=c(AGEINTERVIEW,
+                    MARRIAGE ,INCOME_PP_LOG10,
+                    HEIGHT,WEIGHT,BMI ,CESD_NEW6PT,
+                    DIABETES, HYPERTENSION, HEARTPROB, GENHEALTH, #CANCER, 
+                    VIG_EXERCISE, #LIGHT_EXERCISE, 
+                    SMK_STATUS, #SMOKE_EVER,SMOKE_NOW,
+                    ALC_STATUS, #ALCOHOL_EVER, ALCOHOL_NOW,
+                    SYSTOLIC_BP, DIASTOLIC_BP, PULSE
+      ))
+  
+  ### Complete ----
+  d_wide[[paste0(out,"_young")]] <- inner_join(
+    d$variables$invariant, d_wide[[paste0(out,"_young")]]
+    )
+  
 }
 
-## Younger  ----
-
-### Subset ----
-hrs_young <- hrs_tv_long %>% 
-  filter(Year <=2008, cohort == 0)
-
-### Standardize  ----
-
-
-for(i in instructions$distVars){
-  hrs_young[[paste0(i,"_z")]] = 
-    (hrs_young[[i]]-mean(hrs_old[[i]],na.rm=T))/sd(hrs_old[[i]],na.rm=T)
-}
-
-
-# Recreate Wide Datasets ----
-
-## OLDER ----
-
-### Spread ----
-HRS_old_wide <- hrs_old %>% 
-  select(-Year, -ends_with("_z")) %>%
-  pivot_wider(
-    names_from = Wave,
-    names_sep  = "_HRS_",
-    values_from=c(INTERVIEW_BEGDT, AGEINTERVIEW,
-                  MARRIAGE ,INCOME_PP_LOG10,
-                  HEIGHT,WEIGHT,BMI ,CESD_NEW6PT,
-                  DIABETES, HYPERTENSION, HEARTPROB, GENHEALTH, #CANCER, 
-                  VIG_EXERCISE, #LIGHT_EXERCISE, 
-                  SMK_STATUS, #SMOKE_EVER,SMOKE_NOW,
-                  ALC_STATUS, #ALCOHOL_EVER, ALCOHOL_NOW,
-                  SYSTOLIC_BP, DIASTOLIC_BP, PULSE
-    ))
-
-### Join Invariant ----
-HRS_old_wide <- inner_join(d$variables$invariant, HRS_old_wide,
-                           join_by(CASE_ID_HRS_RA == CASE_ID_OLD_RA)) %>%
-  rename(CASE_ID_OLD_RA = CASE_ID_HRS_RA)
 
 
 
 
-## younger ----
-
-
-### Spread ----
-HRS_young_wide <- hrs_young %>% 
-  select(-INTERVIEW_BEGDT, -Year,
-         -ends_with("_z")) %>%
-  pivot_wider(
-    names_from = Wave,
-    names_sep  = "_HRS_",
-    values_from=c(AGEINTERVIEW,
-                  MARRIAGE ,INCOME_PP_LOG10,
-                  HEIGHT,WEIGHT,BMI ,CESD_NEW6PT,
-                  DIABETES, HYPERTENSION, HEARTPROB, GENHEALTH, #CANCER, 
-                  VIG_EXERCISE, #LIGHT_EXERCISE, 
-                  SMK_STATUS, #SMOKE_EVER,SMOKE_NOW,
-                  ALC_STATUS, #ALCOHOL_EVER, ALCOHOL_NOW,
-                  SYSTOLIC_BP, DIASTOLIC_BP, PULSE
-    ))
-
-### Complete ----
-HRS_young_wide <- inner_join(d$variables$invariant, HRS_young_wide)
 
 
 # Save ----
-saveRDS(hrs_tv_wide,   "../../DP_HRS_Only/HRS_wide.rds")
-saveRDS(hrs_tv_long,   "../../DP_HRS_Only/HRS_Full_OG.rds")
-saveRDS(hrs_old,       "../../DP_HRS_Only/HRS_old.rds")
-saveRDS(HRS_old_wide,  "../../DP_HRS_Only/HRS_old_wide.rds")
-saveRDS(hrs_young,     "../../DP_HRS_Only/HRS_young.rds")
-saveRDS(HRS_young_wide,"../../DP_HRS_Only/HRS_young_wide.rds")
+# Full Datasets 
+saveRDS(hrs_tv_long,   "../../DP_HRS_Only/HRS_Full_OG.rds") # Original -> long
+saveRDS(hrs_tv_wide,   "../../DP_HRS_Only/HRS_wide.rds") # Long -> wide
+
+# Subset by outcome
+saveRDS(d_long, "../../DP_HRS_Only/Long_Data.rds")
+saveRDS(d_wide, "../../DP_HRS_Only/Wide_Data.rds")
+# saveRDS(hrs_old,       "../../DP_HRS_Only/HRS_old.rds")
+# saveRDS(HRS_old_wide,  "../../DP_HRS_Only/HRS_old_wide.rds")
+# saveRDS(hrs_young,     "../../DP_HRS_Only/HRS_young.rds")
+# saveRDS(HRS_young_wide,"../../DP_HRS_Only/HRS_young_wide.rds")
