@@ -60,9 +60,9 @@ for(outcome in outcomes){
   names(nTracker[[outcome]]) <- names(instruction_sets[[outcome]])
   
   nTracker[[outcome]]["OLD_start",] <- 
-    length(unique(d[["long"]][[paste0(out_hrs_14,"_old")]])[["CASE_ID_OLD_RA"]])
+    length(unique(d[["long"]][[paste0(out_hrs_14,"_old")]][["CASE_ID_OLD_RA"]]))
   nTracker[[outcome]]["young_start",] <-
-    length(unique(d[["long"]][[paste0(out_hrs_14,"_young")]])[['CASE_ID_HRS_RA']])
+    length(unique(d[["long"]][[paste0(out_hrs_14,"_young")]][['CASE_ID_HRS_RA']]))
   
   # Loop through each instruction set
   for(instructions in names(instruction_sets[[outcome]])){

@@ -82,25 +82,35 @@ input$tbl_dist[[out]] <- input$tbl_dist[[out]] %>%
 
 \newpage 
 
-# Introduction
+# Objective
 
-This analysis intends to respond to reviewer comments on the Simulation Paper. It applies to data pooling approach in the HRS sample where we know participants' values over a span of nearly 30 years. 
+Apply the data pooling approach (from the main text) to a real dataset. 
 
-# Cohorts
+# Methods
 
-We took the HRS cohort and selected participants whose first visit was in 1992 and had follow-up visits in 1994, 2008, and 2018. We then randomly split the HRS cohort into two cohorts and masked half of their data: 
+## Cohort
 
-  - "young cohort" uses data from waves from 2008 and earlier 
-  - "older cohort" uses data from waves from 2008 and later
+The Health and Retirement Study (HRS) is a longitudinal study that surveys a representative sample of ~20,000 people in the United States with over 20 years of follow-up. We selected participants whose first visit was in 1992 and had follow-up visits in 1994, 2008, and 2018. 
 
-# Overview of matching strategy
+We randomly assigned participants into an "older" cohort and a "younger" cohort. The "older" cohort uses data only from 2008 and later, masking the participants' data prior to then; the "younger" cohort uses data from 2008 and earlier, masking their data collected afterwards. 
 
-Similar to the alcohol analysis, this analysis runs into the variable-sample size trade off. To circumvent the selection of variables, we started with a minimal set of variables to match on per Katrina's recommendations. 
+## Matching Process
 
-In this case, we matched on core demographic features: sex, race/ethnicity, and age and only matched on `important` mediators: BMI (exposure) and General Health recorded (outcome) in 2008 (matching year). We tracked the sample size at each step of the process (Table 1)
+The simulation follows the steps taken in the main text. Briefly, the "older" cohort's baseline characteristics (assumed to be static such as race/ethnicity or sex) are exact matched to the "younger" cohort's baseline characteristics. As some characteristics can vary over time, the "older" cohort's baseline characteristics are then matched to time-varying characteristics of the "younger" cohort (e.g. religion, job status, marital status). The pairs created from these steps were then ranked based on how similar they were based on a difference in a set of continuous variables (e.g. those with closer BMI values were considered more similar). 
+
+## Outcomes
+
+To demonstrate the effect of different matching strategies, we selected three different outcomes (`History of Diabetes`, `Self-reported general health (1: Excellent - 5: Poor)`, `Systolic Blood Pressure`). We selected 2018 as the outcome year to have both component cohorts approximate longitudinal cohorts, where the younger cohort would represent age 50s to 66 and the older cohort would represent ages 66 to 77.
+
+## Matching Sets 
+
+For each outcome, we matched on core demographic features: sex, race/ethnicity, and age (within 5 years of each other). We then selected a minimal set of matching variables (total 12 matching sets): a model without mediator variables, a model matching only on a mediating exposure, a model matching only on a mediating outcome, and a model matching on both a mediating exposure and outcome. The mediator values were taken from 2008, the overlap year between the cohorts.
+
+We tracked the sample size at each step of the process in the following tables.
 
 \newpage
 
+### Diabetes Sample Size Tracker
 ```{r, echo=FALSE}
 input$nTracker$DIABETES %>% 
   kable(caption = "Sample Size Tracker") %>%
@@ -108,7 +118,7 @@ input$nTracker$DIABETES %>%
                 latex_options = c("HOLD_position"))
 ```
 
-
+### General Health Sample Size Tracker
 ```{r, echo=FALSE}
 input$nTracker$GENHEALTH %>% 
   kable(caption = "Sample Size Tracker") %>%
@@ -116,7 +126,7 @@ input$nTracker$GENHEALTH %>%
                 latex_options = c("HOLD_position"))
 ```
 
-
+### Systolic Blood Pressure Sample Size Tracker
 ```{r, echo=FALSE}
 input$nTracker$SYSTOLIC_BP %>% 
   kable(caption = "Sample Size Tracker") %>%
@@ -124,47 +134,50 @@ input$nTracker$SYSTOLIC_BP %>%
                 latex_options = c("HOLD_position"))
 ```
 
+\newpage
+
 # Regression Results
 
-We then ran regressions in the pooled data with age, race/ethnicity, and sex as co-variates. For comparisons, we then ran the same analysis in those who were matched, labeled "Gold Standard". Results (Table 2) were largely similar between the two.
+We ran regressions in the pooled data with age, race/ethnicity, and sex as co-variates. For comparisons, we then ran the same analysis in those who were matched, labeled "Gold Standard". Results (Table 2) were largely similar between the two.
 
-### Figure 1a. Effect Estimates by Matching Set and Source
+### Figure 1a. Diabetes Effect Estimates by Matching Set and Source
 ```{r, echo=FALSE}
 suppressWarnings(print(input$figure1$DIABETES))
 ```
 
-
-### Figure 1b. Effect Estimates by Matching Set and Source
+### Figure 1b. General Health Effect Estimates by Matching Set and Source
 ```{r, echo=FALSE}
 suppressWarnings(print(input$figure1$GENHEALTH))
 ```
 
-
-### Figure 1c. Effect Estimates by Matching Set and Source
+### Figure 1c. Systolic BP Effect Estimates by Matching Set and Source
 ```{r, echo=FALSE}
 suppressWarnings(print(input$figure1$SYSTOLIC_BP))
 ```
 
 \newpage 
+
 # QC
 
-Mean values for the distance variables were largely the same in the younger and older cohorts across each of the four matching sets. 
+Mean values for each distance variables were largely similar in the younger and older cohorts across each of the four matching sets. The mean values were most similar when mediator variables were excluded. 
+
+Each of the following tables present a different outcome (diabetes, general health, systolic blood pressure) grouped together by the matching set (no mediators, BMI, outcome, both mediators).
 
 ```{r, echo=FALSE}
 input$tbl_means$DIABETES %>% 
-  kable(caption = "Mean Values: Old vs Young",
+  kable(caption = "Diabetes - Comparison Mean Values: Old vs Young",
         "latex",
         booktabs = T,
         col.names = rep(c("Old","Young"),4)) %>%
   kable_styling("striped",
                 latex_options = c("HOLD_position", "scale_down")) %>%
-  add_header_above(c(" "=1, "Both Mediators" = 2, "DIABETES" = 2, "BMI" = 2, 
+  add_header_above(c(" "=1, "Both Mediators" = 2, "HbA1c" = 2, "BMI" = 2, 
                      "No Mediators" = 2))
 ```
 
 ```{r, echo=FALSE}
 input$tbl_means$GENHEALTH %>% 
-  kable(caption = "Mean Values: Old vs Young",
+  kable(caption = "General Health - Comparison Mean Values: Old vs Young",
         "latex",
         booktabs = T,
         col.names = rep(c("Old","Young"),4)) %>%
@@ -176,7 +189,7 @@ input$tbl_means$GENHEALTH %>%
 
 ```{r, echo=FALSE}
 input$tbl_means$SYSTOLIC_BP %>% 
-  kable(caption = "Mean Values: Old vs Young",
+  kable(caption = "Systolic BP - Comparison of Mean Values: Old vs Young",
         "latex",
         booktabs = T,
         col.names = rep(c("Old","Young"),4)) %>%
@@ -186,25 +199,57 @@ input$tbl_means$SYSTOLIC_BP %>%
                      "No Mediators" = 2))
 ```
 
-
 \newpage
 
-The distance between the matched variables can be seen in the following table. 
+We can also present the average difference within each matched pair. In nearly all cases, with exception of general health, the average difference increased when matching on both sets of variables. 
 
 ```{r, echo=FALSE}
-input$tbl_dist %>% 
-  kable(caption = "Average distance in distance variables",
+input$tbl_dist$DIABETES %>% 
+  kable(caption = "Diabetes: Average difference in distance variables",
         "latex",
         booktabs = T) %>%
   kable_styling("striped",
                 latex_options = c("HOLD_position"))
 ```
 
-In previous attempts, there were concerns as to who was getting selected for the matches. We compare the demographics of those who were matched to those that were not among participants randomly assigned to the `Older` cohort and.
+```{r, echo=FALSE}
+input$tbl_dist$GENHEALTH %>% 
+  kable(caption = "General Health: Average difference in distance variables",
+        "latex",
+        booktabs = T) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position"))
+```
 
 ```{r, echo=FALSE}
-input$table1 %>% 
-  kable(caption = "Matched Vs Unmatched",
+input$tbl_dist$SYSTOLIC_BP %>% 
+  kable(caption = "Systolic Blood Pressure: Average difference in distance variables",
+        "latex",
+        booktabs = T) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position"))
+```
+
+
+\newpage
+
+In the following tables, we compared the demographics of those who _were_ matched to those that _were not_ matched among participants randomly assigned to the `Older` cohort.
+
+```{r, echo=FALSE}
+input$table1$DIABETES %>% 
+  kable(caption = "Diabetes - Matched Vs Unmatched",
+        "latex",
+        booktabs = T,
+        col.names = rep(c("Matched","Unmatched"),4)) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "HbA1c" = 2, 
+                     "Both Mediators" = 2))
+```
+
+```{r, echo=FALSE}
+input$table1$GENHEALTH %>% 
+  kable(caption = "General Health - Matched Vs Unmatched",
         "latex",
         booktabs = T,
         col.names = rep(c("Matched","Unmatched"),4)) %>%
@@ -214,10 +259,22 @@ input$table1 %>%
                      "Both Mediators" = 2))
 ```
 
-Interestingly females were more likely to get matched than males. Otherwise, those that were matched were largely similar to those who were unmatched with maybe the exception of age. I suspect this may be due to how HRS includes spouses that may either be significantly younger or older than the respondents. 
+```{r, echo=FALSE}
+input$table1$SYSTOLIC_BP %>% 
+  kable(caption = "Systolic BP - Matched Vs Unmatched",
+        "latex",
+        booktabs = T,
+        col.names = rep(c("Matched","Unmatched"),4)) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "SBP" = 2, 
+                     "Both Mediators" = 2))
+```
 
+\newpage
+\blandscape
 
-
+## Appendix: Full Regression Results
 
 ```{r, echo=FALSE}
 input$regresult$DIABETES %>% 
@@ -227,7 +284,7 @@ input$regresult$DIABETES %>%
         col.names = rep(c("Pooled","Truth"),4)) %>%
   kable_styling("striped",
                 latex_options = c("HOLD_position", "scale_down")) %>%
-  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "DIABETES" = 2, 
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "HbA1c" = 2, 
                      "Both Mediators" = 2))
 ```
 
@@ -239,7 +296,7 @@ input$regresult$GENHEALTH %>%
         col.names = rep(c("Pooled","Truth"),4)) %>%
   kable_styling("striped",
                 latex_options = c("HOLD_position", "scale_down")) %>%
-  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "DIABETES" = 2, 
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "GENHEALTH" = 2, 
                      "Both Mediators" = 2))
 ```
 
@@ -251,6 +308,8 @@ input$regresult$SYSTOLIC_BP %>%
         col.names = rep(c("Pooled","Truth"),4)) %>%
   kable_styling("striped",
                 latex_options = c("HOLD_position", "scale_down")) %>%
-  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "DIABETES" = 2, 
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "Systolic BP" = 2, 
                      "Both Mediators" = 2))
 ```
+
+\elandscape
