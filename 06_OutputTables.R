@@ -147,13 +147,13 @@ for(out in outcomes){
     # Loop over distance variables 
     for(var in instruction_sets[[out]]$Instructions_BOTH.R$distVars){
       # And calculate the mean and SD
-      var_dist <- paste0(var,"_dist_QC")
+      var_dist <- paste0(var,"_dist")
       tbl_dist[var,set]<-round(mean(matched_sets[[out]][[set]][[var_dist]], 
                                     na.rm=TRUE),
                                n_dec)
-      tbl_dist[var,set]  <-round(sd(matched_sets[[out]][[set]][[var_dist]], 
-                                    na.rm=TRUE),
-                                 n_dec)
+      # tbl_dist[var,set]<-round(sd(matched_sets[[out]][[set]][[var_dist]], 
+      #                               na.rm=TRUE),
+      #                            n_dec)
     }
   }
   list_means[[out]]<- tbl_means

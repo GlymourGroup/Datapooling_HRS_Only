@@ -1,5 +1,5 @@
 ---
-title: "99 Simulation Applied Example"
+title: "Simulation - Applied HRS Example"
 author: "Peter Buto"
 date: "`r Sys.Date()`"
 output: 
@@ -161,7 +161,9 @@ suppressWarnings(print(input$figure1$SYSTOLIC_BP))
 
 Mean values for each distance variables were largely similar in the younger and older cohorts across each of the four matching sets. The mean values were most similar when mediator variables were excluded. 
 
-Each of the following tables present a different outcome (diabetes, general health, systolic blood pressure) grouped together by the matching set (no mediators, BMI, outcome, both mediators).
+Each of the following tables present a different outcome (diabetes, general health, systolic blood pressure) grouped together by the matching set (no mediators, BMI, outcome, both mediators). 
+
+Units are in the mediator values (percentages for HbA1c, Count [1-5] for Self-Rated Health, and mmHg for SBP).
 
 ```{r, echo=FALSE}
 input$tbl_means$DIABETES %>% 
@@ -201,10 +203,12 @@ input$tbl_means$SYSTOLIC_BP %>%
 
 \newpage
 
-We can also present the average difference within each matched pair. In nearly all cases, with exception of general health, the average difference increased when matching on both sets of variables. 
+We can also present the average absolute difference within each matched pair (this is the same distance that is used to rank how similar the matches are). In nearly all cases, with exception of general health, the average difference increased when matching on both sets of variables. 
+
+Units are in the mediator values (percentages for HbA1c, Count [1-5] for Self-Rated Health, and mmHg for SBP).
 
 ```{r, echo=FALSE}
-input$tbl_dist$DIABETES %>% 
+input$tbl_dist$DIABETES %>%
   kable(caption = "Diabetes: Average difference in distance variables",
         "latex",
         booktabs = T) %>%
@@ -213,7 +217,7 @@ input$tbl_dist$DIABETES %>%
 ```
 
 ```{r, echo=FALSE}
-input$tbl_dist$GENHEALTH %>% 
+input$tbl_dist$GENHEALTH %>%
   kable(caption = "General Health: Average difference in distance variables",
         "latex",
         booktabs = T) %>%
@@ -222,7 +226,7 @@ input$tbl_dist$GENHEALTH %>%
 ```
 
 ```{r, echo=FALSE}
-input$tbl_dist$SYSTOLIC_BP %>% 
+input$tbl_dist$SYSTOLIC_BP %>%
   kable(caption = "Systolic Blood Pressure: Average difference in distance variables",
         "latex",
         booktabs = T) %>%

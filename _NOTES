@@ -94,3 +94,9 @@ Go on with different outcomes. Use older analyses to see what covariates we coul
 12/19/2023
 
 Check in with Scott and Maria as to whether missing values are okay to use across permutations. 
+
+============
+01/04/2023 
+
+in script 06, sd overwrites mean for distances (line 154) - fixed. 
+Would be better to take the absolute difference rather than a direct subtraction. 
