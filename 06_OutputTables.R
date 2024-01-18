@@ -54,22 +54,22 @@ rm(ii)
 # Var Order ----
 var_weights <- readRDS("../../DP_HRS_Only/Weights.RDS")
 
-var_order <- list()
-# Loop through each outcome and instruction set
-for(out in outcomes){
-  for(instructions in names(instruction_sets[[out]])){
-    # Order variables by magnitude 
-    var_weights$total[[out]][[instructions]] <-
-      var_weights$total[[out]][[instructions]][order(unlist(var_weights$total[[out]][[instructions]]),
-                                                     decreasing = TRUE)]
-    
-    # Remove AGEINTERVIEW
-    var_weights$total[[out]][[instructions]]$AGEINTERVIEW  <-NULL
-    
-    var_order[[out]][[instructions]] <- 
-      names(var_weights$total[[out]][[instructions]])
-  }
-}
+# var_order <- list()
+# # Loop through each outcome and instruction set
+# for(out in outcomes){
+#   for(instructions in names(instruction_sets[[out]])){
+#     # Order variables by magnitude 
+#     var_weights$total[[out]][[instructions]] <-
+#       var_weights$total[[out]][[instructions]][order(unlist(var_weights$total[[out]][[instructions]]),
+#                                                      decreasing = TRUE)]
+#     
+#     # Remove AGEINTERVIEW
+#     var_weights$total[[out]][[instructions]]$AGEINTERVIEW  <-NULL
+#     
+#     var_order[[out]][[instructions]] <- 
+#       names(var_weights$total[[out]][[instructions]])
+#   }
+# }
 
 # Functions ----
 get_univariate_table <- function(d){
@@ -105,10 +105,8 @@ for(out in outcomes){
   # Initiate lists to store the cohort-specific means
   tbl_means<-as.data.frame(matrix(nrow=0, 
                                   ncol=2*(length(matched_sets[[out]]))))
-  names(tbl_means) <- c("Instructions_NONE.R_OLD","Instructions_NONE.R_young",
-                        "Instructions_EXP.R_OLD", "Instructions_EXP.R_young",
-                        "Instructions_OUT.R_OLD", "Instructions_OUT.R_young",
-                        "Instructions_BOTH.R_OLD","Instructions_BOTH.R_young")
+  names(tbl_means) <- c(paste0(names(instruction_sets[[out]]), "_OLD"),
+                        paste0(names(instruction_sets[[out]]), "_young"))
   
   # Duplicate for the SD
   tbl_sds <- tbl_means
@@ -119,31 +117,44 @@ for(out in outcomes){
     n_exact <- nrow(matched_sets[[out]][[set]])
     # Calculate descriptive statistics for each variable
     for(cohort in (c("_OLD","_young"))){
-      for(var in instruction_sets[[out]]$Instructions_BOTH.R$distVars){
-        # If the variable is an exact variable, calc the n & proportion
-        var_cohort <- paste0(var,cohort)
+      if(out!="DIABETES"){
+        for(var in instruction_sets[[out]]$Instructions_BOTH.R$distVars){
+          # If the variable is an exact variable, calc the n & proportion
+          var_cohort <- paste0(var,cohort)
+          
+          tbl_means[var,paste0(set,cohort)] <- 
+            round(mean(matched_sets[[out]][[set]][[var_cohort]],na.rm=TRUE),n_dec)
+          
+          tbl_sds[var,paste0(set,cohort)]  <- 
+            round(sd(matched_sets[[out]][[set]][[var_cohort]],  na.rm=TRUE),n_dec)
+        }
+      }else{
+        for(var in instruction_sets[[out]]$Instructions_ALL3.R$distVars){
+          # If the variable is an exact variable, calc the n & proportion
+          var_cohort <- paste0(var,cohort)
+          
+          tbl_means[var,paste0(set,cohort)] <- 
+            round(mean(matched_sets[[out]][[set]][[var_cohort]],na.rm=TRUE),n_dec)
+          
+          tbl_sds[var,paste0(set,cohort)]  <- 
+            round(sd(matched_sets[[out]][[set]][[var_cohort]],  na.rm=TRUE),n_dec)
+        }
+      }
         
-        tbl_means[var,paste0(set,cohort)] <- 
-          round(mean(matched_sets[[out]][[set]][[var_cohort]],na.rm=TRUE),n_dec)
-        
-        tbl_sds[var,paste0(set,cohort)]  <- 
-          round(sd(matched_sets[[out]][[set]][[var_cohort]],  na.rm=TRUE),n_dec)
       }
     }
-  }
   # Repeat for the distances between the distance variables
   
   # Create a table to hold distances
   tbl_dist <- 
     as.data.frame(matrix(nrow=length(instruction_sets[[out]]$Instructions_BOTH.R$distVars),
                          ncol=length(matched_sets[[out]]) - 1)) # ignore 'none'
-  names(tbl_dist) <- c("Instructions_EXP.R",
-                       "Instructions_OUT.R",
-                       "Instructions_BOTH.R")
+  names(tbl_dist) <- 
+    names(matched_sets[[out]])[names(matched_sets[[out]]) != "Instructions_NONE.R"]
   row.names(tbl_dist) <- instruction_sets[[out]]$Instructions_BOTH.R$distVars
   
   # for each matched set, 
-  for(set in c("Instructions_EXP.R","Instructions_OUT.R","Instructions_BOTH.R")){
+  for(set in names(matched_sets[[out]])[names(matched_sets[[out]]) != "Instructions_NONE.R"]){
     # Loop over distance variables 
     for(var in instruction_sets[[out]]$Instructions_BOTH.R$distVars){
       # And calculate the mean and SD
@@ -179,11 +190,20 @@ m_gold <- list()
 for(out in outcomes){
   out_hrs_14 <- paste0(out,"_HRS_14")
   ### Initiate table ----
-  rubin_means <- 
-    data.frame(matrix(nrow=length(rubin[[out]]$Instructions_BOTH.R$coef_mean),
-                                 ncol=length(matched_sets[[out]])))
+  if(out != "DIABETES"){
+    rubin_means <- 
+      data.frame(matrix(nrow=length(rubin[[out]]$Instructions_BOTH.R$coef_mean),
+                        ncol=length(matched_sets[[out]])))
+    rownames(rubin_means) <- names(rubin[[out]]$Instructions_BOTH.R$coef_mean)
+    
+  }else{
+    rubin_means <- 
+      data.frame(matrix(nrow=length(rubin[[out]]$Instructions_ALL3.R$coef_mean),
+                        ncol=length(matched_sets[[out]])))
+    rownames(rubin_means) <- names(rubin[[out]]$Instructions_ALL3.R$coef_mean)
+  }
+  
   colnames(rubin_means) <- names(matched_sets[[out]])
-  rownames(rubin_means) <- names(rubin[[out]]$Instructions_BOTH.R$coef_mean)
   
   rubin_sds <- rubin_means
   
@@ -198,6 +218,9 @@ for(out in outcomes){
   d$gold[[out_hrs_14]]$age_dec50 = 
     (d$gold[[out_hrs_14]]$AGEINTERVIEW_HRS_14-50)/10
   
+  
+  # We only need the gold standard for the most restrcted case
+  # can hold onto others just in case
   d_gold_sets <- list()
   
   for(set in names(matched_sets[[out]])){
@@ -259,6 +282,7 @@ for(out in outcomes){
     lb[[set]] <- round(rubin_means[[set]]-1.96*(rubin_sds[[set]]), n_dec)
     ub[[set]] <- round(rubin_means[[set]]+1.96*(rubin_sds[[set]]), n_dec)
 
+    rubin_means[[paste0(set,"_TRUTH")]] <- round(m_gold[[out]][[set]]$Estimate, n_dec)
     lb[[paste0(set,"_TRUTH")]] <- round(m_gold[[out]][[set]]$Estimate-1.96*(m_gold[[out]][[set]]$`Std. Error`), n_dec)
     ub[[paste0(set,"_TRUTH")]] <- round(m_gold[[out]][[set]]$Estimate+1.96*(m_gold[[out]][[set]]$`Std. Error`), n_dec)
     
@@ -290,50 +314,37 @@ plot1<- list()
 
 for(out in outcomes){
   ## Create data frame ----
-  fig1[[out]] <- data.frame(matrix(nrow=8,
-                                   ncol=5))
-  names(fig1[[out]]) <- c("Source", "Model", "Estimate", "LB", "UB")
-  fig1[[out]]$Source <- rep(c("Pooled", "Truth"), 4)
-  fig1[[out]]$Model  <- c(rep("No Mediators", 2),
-                          rep("BMI", 2),
-                          rep(out, 2),
-                          rep("Both Mediators", 2))
-  fig1[[out]]$Model <- factor(fig1[[out]]$Model, 
-                              levels = c("No Mediators",
-                                         "BMI",
-                                         out,
-                                         "Both Mediators"))
-  fig1[[out]]$Estimate <- c(rubin_means_lt[[out]]$Instructions_NONE.R[2],
-                            m_gold[[out]]$Instructions_NONE.R$Estimate[2],
-                            rubin_means_lt[[out]]$Instructions_EXP.R[2],
-                            m_gold[[out]]$Instructions_EXP.R$Estimate[2],
-                            rubin_means_lt[[out]]$Instructions_OUT.R[2],
-                            m_gold[[out]]$Instructions_OUT.R$Estimate[2],
-                            rubin_means_lt[[out]]$Instructions_BOTH.R[2],
-                            m_gold[[out]]$Instructions_BOTH.R$Estimate[2])
-  fig1[[out]]$LB <- c(rubin_lb_list[[out]]$Instructions_NONE.R[2],
-                      rubin_lb_list[[out]]$Instructions_NONE.R_TRUTH[2],
-                      rubin_lb_list[[out]]$Instructions_EXP.R[2],
-                      rubin_lb_list[[out]]$Instructions_EXP.R_TRUTH[2],
-                      rubin_lb_list[[out]]$Instructions_OUT.R[2],
-                      rubin_lb_list[[out]]$Instructions_OUT.R_TRUTH[2],
-                      rubin_lb_list[[out]]$Instructions_BOTH.R[2],
-                      rubin_lb_list[[out]]$Instructions_BOTH.R_TRUTH[2])
-  fig1[[out]]$UB <- c(rubin_ub_list[[out]]$Instructions_NONE.R[2],
-                      rubin_ub_list[[out]]$Instructions_NONE.R_TRUTH[2],
-                      rubin_ub_list[[out]]$Instructions_EXP.R[2],
-                      rubin_ub_list[[out]]$Instructions_EXP.R_TRUTH[2],
-                      rubin_ub_list[[out]]$Instructions_OUT.R[2],
-                      rubin_ub_list[[out]]$Instructions_OUT.R_TRUTH[2],
-                      rubin_ub_list[[out]]$Instructions_BOTH.R[2],
-                      rubin_ub_list[[out]]$Instructions_BOTH.R_TRUTH[2])
+  fig1[[out]] <- data.frame(matrix(nrow=length(matched_sets[[out]])*2,
+                                   ncol=4)) # See next line
+  names(fig1[[out]]) <- c("Model", "Estimate", "LB", "UB")
+  #fig1[[out]]$Source <- rep(c("Pooled", "Truth"), length(matched_sets[[out]]))
+  fig1[[out]]$Model  <- names(rubin_means_lt[[out]])
+  # fig1[[out]]$Model <- factor(fig1[[out]]$Model, 
+  #                             levels = c("No Mediators",
+  #                                        "BMI",
+  #                                        out,
+  #                                        "Both Mediators"))
+  fig1[[out]]$Estimate <- as.numeric(rubin_means_lt[[out]][2,])
+  fig1[[out]]$LB <- as.numeric(rubin_lb_list[[out]][2,])
+  fig1[[out]]$UB <- as.numeric(rubin_ub_list[[out]][2,])
   
   plot1[[out]] <- fig1[[out]] %>% 
-    ggplot(aes(x = Model, y = Estimate, group = Source, color = Source)) +
-    geom_point(position = position_dodge(width = 0.2)) +
+    filter(!grepl("_TRUTH", Model)) %>%
+    mutate(Model = gsub("Instructions_", "", Model)) %>%
+    mutate(Model = gsub(".R", "", Model)) %>%
+    ggplot(aes(x = Model, y = Estimate)) +
+    #geom_point(position = position_dodge(width = 0.2)) +
     geom_errorbar(aes(ymin=LB, ymax=UB), 
                   width=0.2,
-                  position =position_dodge(width = 0.2))
+                  position =position_dodge(width = 0.2)) +
+    geom_hline(yintercept = fig1[[out]][grep("_BOTH.R_TRUTH",fig1[[out]]$Model),
+                                        "Estimate"])+
+    geom_hline(yintercept = fig1[[out]][grep("_BOTH.R_TRUTH",fig1[[out]]$Model),
+                                        "LB"],
+               linetype="dashed")+
+    geom_hline(yintercept = fig1[[out]][grep("_BOTH.R_TRUTH",fig1[[out]]$Model),
+                                        "UB"],
+               linetype="dashed")
   
 }
 

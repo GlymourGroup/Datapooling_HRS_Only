@@ -1,0 +1,107 @@
+---
+title: "temp"
+author: "Peter Buto"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+
+\newpage
+
+We can also present the average absolute difference within each matched pair (this is the same distance that is used to rank how similar the matches are). In nearly all cases, with exception of general health, the average difference increased when matching on both sets of variables. 
+
+Units are in the mediator values (percentages for HbA1c, Count [1-5] for Self-Rated Health, and mmHg for SBP).
+
+```{r, echo=FALSE}
+input$tbl_dist$DIABETES %>% 
+  select(-Instructions_DIAB.R)
+  rownames_to_column("Distance Variable") %>%
+  flextable() %>%
+  set_caption(caption = "Diabetes - Average difference in distance variables")
+```
+
+In the following tables, we compared the demographics of those who _were_ matched to those that _were not_ matched among participants randomly assigned to the `Older` cohort.
+
+```{r, echo=FALSE}
+input$table1$DIABETES %>% 
+  kable(caption = "Diabetes - Matched Vs Unmatched",
+        "latex",
+        booktabs = T,
+        col.names = rep(c("Matched","Unmatched"),4)) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "HbA1c" = 2, 
+                     "Both Mediators" = 2))
+
+input$table1$DIABETES %>%
+  flextable() %>%
+  add_header_row(colwidths = c(1, 2,2,2,2, 2, 2, 2),
+                 values = c("","No Mediators","BMI","HbA1c","Diabetes",
+                            "BMI & HbA1c", "Diabetes & HbA1c",
+                            "BMI, HbA1c, DM")) %>%
+  set_caption(caption = "Systolic Blood Pressure - Average difference in distance variables")
+
+```
+
+```{r, echo=FALSE}
+input$table1$GENHEALTH %>% 
+  kable(caption = "General Health - Matched Vs Unmatched",
+        "latex",
+        booktabs = T,
+        col.names = rep(c("Matched","Unmatched"),4)) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "GENHEALTH" = 2, 
+                     "Both Mediators" = 2))
+```
+
+```{r, echo=FALSE}
+input$table1$SYSTOLIC_BP %>% 
+  kable(caption = "Systolic BP - Matched Vs Unmatched",
+        "latex",
+        booktabs = T,
+        col.names = rep(c("Matched","Unmatched"),4)) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "SBP" = 2, 
+                     "Both Mediators" = 2))
+```
+
+
+## Appendix: Full Regression Results
+
+```{r, echo=FALSE}
+input$regresult$DIABETES %>% 
+  kable(caption = "Regression Results",
+        "latex",
+        booktabs = T,
+        col.names = rep(c("Pooled","Truth"),4)) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "HbA1c" = 2, 
+                     "Both Mediators" = 2))
+```
+
+```{r, echo=FALSE}
+input$regresult$GENHEALTH %>% 
+  kable(caption = "Regression Results",
+        "latex",
+        booktabs = T,
+        col.names = rep(c("Pooled","Truth"),4)) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "GENHEALTH" = 2, 
+                     "Both Mediators" = 2))
+```
+
+```{r, echo=FALSE}
+input$regresult$SYSTOLIC_BP %>% 
+  kable(caption = "Regression Results",
+        "latex",
+        booktabs = T,
+        col.names = rep(c("Pooled","Truth"),4)) %>%
+  kable_styling("striped",
+                latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "Systolic BP" = 2, 
+                     "Both Mediators" = 2))
+```

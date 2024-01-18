@@ -220,34 +220,49 @@ hrs <- HRS %>%
     
     ### Diabetes ----
     DIABETES_HRS_1 = case_when((DIABETES_HRS_1 == 1 |DIABETES_HRS_EVER_1 == 1) ~ 1, 
+                               (DIABETES_HRS_1 == 0 |DIABETES_HRS_EVER_1 == 0) ~ 0, 
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_1)),
     DIABETES_HRS_2 = case_when((DIABETES_HRS_2 == 1 |DIABETES_HRS_1 ==1|DIABETES_HRS_EVER_2 == 1) ~ 1, 
+                               (DIABETES_HRS_2 == 0 |DIABETES_HRS_1 ==0|DIABETES_HRS_EVER_2 == 0) ~ 0,
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_2)),
     DIABETES_HRS_3 = case_when((DIABETES_HRS_3 == 1 |DIABETES_HRS_2 ==1|DIABETES_HRS_EVER_3 == 1) ~ 1, 
+                               (DIABETES_HRS_3 == 0 |DIABETES_HRS_2 ==0|DIABETES_HRS_EVER_3 == 0) ~ 0,
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_3)),
     DIABETES_HRS_4 = case_when((DIABETES_HRS_4 == 1 |DIABETES_HRS_3 ==1|DIABETES_HRS_EVER_4 == 1) ~ 1, 
+                               (DIABETES_HRS_4 == 0 |DIABETES_HRS_3 ==0|DIABETES_HRS_EVER_4 == 0) ~ 0, 
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_4)),
     DIABETES_HRS_5 = case_when((DIABETES_HRS_5 == 1 |DIABETES_HRS_4 ==1|DIABETES_HRS_EVER_5 == 1) ~ 1, 
+                               (DIABETES_HRS_5 == 0 |DIABETES_HRS_4 ==0|DIABETES_HRS_EVER_5 == 0) ~ 0, 
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_5)),
     DIABETES_HRS_6 = case_when((DIABETES_HRS_6 == 1 |DIABETES_HRS_5 ==1|DIABETES_HRS_EVER_6 == 1) ~ 1, 
+                               (DIABETES_HRS_6 == 0 |DIABETES_HRS_5 ==0|DIABETES_HRS_EVER_6 == 0) ~ 0, 
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_6)),
     DIABETES_HRS_7 = case_when((DIABETES_HRS_7 == 1 |DIABETES_HRS_6 ==1|DIABETES_HRS_EVER_7 == 1) ~ 1, 
+                               (DIABETES_HRS_7 == 0 |DIABETES_HRS_6 ==0|DIABETES_HRS_EVER_7 == 0) ~ 0, 
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_7)),
     DIABETES_HRS_8 = case_when((DIABETES_HRS_8 == 1 |DIABETES_HRS_7 ==1|DIABETES_HRS_EVER_8 == 1) ~ 1, 
+                               (DIABETES_HRS_8 == 0 |DIABETES_HRS_7 ==0|DIABETES_HRS_EVER_8 == 0) ~ 0,
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_8)),
     DIABETES_HRS_9 = case_when((DIABETES_HRS_9 == 1 |DIABETES_HRS_8 ==1|DIABETES_HRS_EVER_9 == 1) ~ 1, 
+                               (DIABETES_HRS_9 == 0 |DIABETES_HRS_8 ==0|DIABETES_HRS_EVER_9 == 0) ~ 0, 
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_9)),
     DIABETES_HRS_10= case_when((DIABETES_HRS_10== 1 |DIABETES_HRS_9 ==1|DIABETES_HRS_EVER_10 == 1) ~ 1, 
+                               (DIABETES_HRS_10== 0 |DIABETES_HRS_9 ==0|DIABETES_HRS_EVER_10 == 0) ~ 0,
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_10)),
     DIABETES_HRS_11= case_when((DIABETES_HRS_11== 1 |DIABETES_HRS_10==1|DIABETES_HRS_EVER_11 == 1) ~ 1, 
+                               (DIABETES_HRS_11== 0 |DIABETES_HRS_10==0|DIABETES_HRS_EVER_11 == 0) ~ 0, 
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_11)),
     DIABETES_HRS_12= case_when((DIABETES_HRS_12== 1 |DIABETES_HRS_11==1|DIABETES_HRS_EVER_12 == 1) ~ 1, 
+                               (DIABETES_HRS_12== 0 |DIABETES_HRS_11==0|DIABETES_HRS_EVER_12 == 0) ~ 0, 
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_12)),
     DIABETES_HRS_13= case_when((DIABETES_HRS_13== 1 |DIABETES_HRS_12==1|DIABETES_HRS_EVER_13 == 1) ~ 1, 
+                               (DIABETES_HRS_13== 0 |DIABETES_HRS_12==0|DIABETES_HRS_EVER_13 == 0) ~ 0, 
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_13)),
     DIABETES_HRS_14= case_when((DIABETES_HRS_14== 1 |DIABETES_HRS_13==1|DIABETES_HRS_EVER_14 == 1) ~ 1, 
+                               (DIABETES_HRS_14== 0 |DIABETES_HRS_13==0|DIABETES_HRS_EVER_14 == 0) ~ 0, 
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_14)),  
     DIABETES_HRS_15= case_when((DIABETES_HRS_15== 1 |DIABETES_HRS_14==1|DIABETES_HRS_EVER_15 == 1) ~ 1, 
+                               (DIABETES_HRS_15== 0 |DIABETES_HRS_14==0|DIABETES_HRS_EVER_15 == 0) ~ 0, 
                                TRUE ~ as.numeric(DIABETES_HRS_EVER_15)),    
     ### Hypertension ----
     HYPERTENSION_HRS_1 = case_when((HYPERTENSION_HRS_1 == 1 |HYPERTENSION_HRS_EVER_1 == 1) ~ 1, 
@@ -956,6 +971,13 @@ hrs <- hrs %>% mutate(
                             FIRSTIW == 2012 ~ 11,FIRSTIW == 2014 ~ 12,
                             FIRSTIW == 2016 ~ 13,FIRSTIW == 2018 ~ 14,
                             FIRSTIW == 2020 ~ 15))
+
+# Create a matching variable for diabetes
+hrs <- hrs %>% mutate(
+  DIAB_MATCH_VAR = case_when(DIABETES_HRS_2 == 1 ~ 1, # Prevalent (at exp)
+                             DIABETES_HRS_9 == 1 ~ 2, # Incident
+                             TRUE ~ 0) # Never
+)
 
 # UNSURE IF WE NEED THE FOLLOWING SECTION (GOOD FOR EVALUATING QUALITY?)
 

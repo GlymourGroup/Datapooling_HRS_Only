@@ -17,9 +17,10 @@ d$HRS <- readRDS("../../DP_HRS_Only/HRS_recoded.RDS")
 instructions <- list(
   GENHEALTH = dget("Instructions/GENHEALTH/Instructions_BOTH.R"),
   SYSTOLIC_BP=dget("Instructions/SYSTOLIC_BP/Instructions_BOTH.R"),
-  DIABETES  = dget("Instructions/DIABETES/Instructions_BOTH.R")
+  DIABETES  = dget("Instructions/DIABETES/Instructions_BOTH.R") 
 )
 # the only instruction sets that actually differ are "BOTH" and "OUT"
+# Don't  update DIABETES/Instructions_Both.R; DIAB_MATCH_VAR is not a dist var
 
 
 # Categorize matching vars ----
@@ -57,13 +58,15 @@ d$variables$timevarying <- d$HRS %>%
          starts_with("ALCOHOL_EVER"),
          starts_with("SYSTOLIC"),
          starts_with("DIASTOLIC"),
-         starts_with("PULSE")
+         starts_with("PULSE"),
+         DIAB_MATCH_VAR
          ) 
 
 
 # Make Long ----
 hrs_tv_long <- d$variables$timevarying %>%
-  pivot_longer(cols = -c(CASE_ID_HRS_RA),
+  pivot_longer(cols = -c(CASE_ID_HRS_RA,
+                         DIAB_MATCH_VAR),
                names_to = c(".value", "Wave"),
                names_sep = "_HRS_")
 

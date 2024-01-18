@@ -121,7 +121,7 @@ for(outcome in outcomes){
       filter(Year == 2008) %>% # mediators only from 2008
       select(CASE_ID_HRS_RA,
              Year,
-             all_of(instruction_sets[[instructions]]$exact_timevarying)) %>%
+             all_of(instruction_sets[[outcome]][[instructions]]$exact_timevarying)) %>%
       # We do not want to match on year, so rename
       rename(Year_young = Year)
     
@@ -212,35 +212,35 @@ for(outcome in outcomes){
     ## Calculate Weights ----
     cat("CALCULATING WEIGHTS\n")
     
-    for(var in instruction_sets[[outcome]][[instructions]]$distVars){
-      matched[[paste0(var,"_dist_weighted")]] = 
-        1/weights[[outcome]][[instructions]][[var]]*matched[[paste0(var,"_dist")]]
-      matched[[paste0(var,"_z_dist_weighted")]] = 
-        1/weights[[outcome]][[instructions]][[var]]*matched[[paste0(var,"_z_dist")]]
-    }
+    # for(var in instruction_sets[[outcome]][[instructions]]$distVars){
+    #   matched[[paste0(var,"_dist_weighted")]] = 
+    #     1/weights[[outcome]][[instructions]][[var]]*matched[[paste0(var,"_dist")]]
+    #   matched[[paste0(var,"_z_dist_weighted")]] = 
+    #     1/weights[[outcome]][[instructions]][[var]]*matched[[paste0(var,"_z_dist")]]
+    # }
     
     ## Total the distances ----
     
     # Initiate Total Scores
-    matched$dist_z_weighted = 0
+    #matched$dist_z_weighted = 0
     matched$dist_z_unweighted = 0
-    matched$dist_weighted = 0
+    #matched$dist_weighted = 0
     matched$dist_unweighted = 0
     
     for(var in instruction_sets[[outcome]][[instructions]]$distVars){
-      matched$dist_z_weighted = 
-        matched$dist_z_weighted + matched[[paste0(var,"_z_dist_weighted")]]
+      # matched$dist_z_weighted = 
+      #   matched$dist_z_weighted + matched[[paste0(var,"_z_dist_weighted")]]
       matched$dist_z_unweighted=
         matched$dist_z_unweighted+matched[[paste0(var,"_z_dist")]]
-      matched$dist_weighted   = 
-        matched$dist_weighted + matched[[paste0(var,"_dist_weighted")]]
+      # matched$dist_weighted   = 
+      #   matched$dist_weighted + matched[[paste0(var,"_dist_weighted")]]
       matched$dist_unweighted = 
         matched$dist_unweighted+ matched[[paste0(var,"_dist")]]
     }
     
     # For some reason, can't directly manipulate weight of interest
     # assign to `new` variable
-    matched$new <- matched[["dist_z_weighted"]]
+    matched$new <- matched[["dist_z_unweighted"]]
     
     ## Find top matches ----
     out[[outcome]][[instructions]] <- matched %>%

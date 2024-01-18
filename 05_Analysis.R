@@ -41,22 +41,22 @@ rm(ii)
 ## Var Order ----
 var_weights <- readRDS("../../DP_HRS_Only/Weights.RDS")
 
-var_order <- list()
-# Loop through each outcome and instruction set
-for(out in outcomes){
-  for(instructions in names(instruction_sets[[out]])){
-    # Order variables by magnitude 
-    var_weights$total[[out]][[instructions]] <-
-      var_weights$total[[out]][[instructions]][order(unlist(var_weights$total[[out]][[instructions]]),
-                                                     decreasing = TRUE)]
-    
-    # Remove AGEINTERVIEW
-    var_weights$total[[out]][[instructions]]$AGEINTERVIEW  <-NULL
-
-    var_order[[out]][[instructions]] <- 
-      names(var_weights$total[[out]][[instructions]])
-  }
-}
+# var_order <- list()
+# # Loop through each outcome and instruction set
+# for(out in outcomes){
+#   for(instructions in names(instruction_sets[[out]])){
+#     # Order variables by magnitude 
+#     var_weights$total[[out]][[instructions]] <-
+#       var_weights$total[[out]][[instructions]][order(unlist(var_weights$total[[out]][[instructions]]),
+#                                                      decreasing = TRUE)]
+#     
+#     # Remove AGEINTERVIEW
+#     var_weights$total[[out]][[instructions]]$AGEINTERVIEW  <-NULL
+# 
+#     var_order[[out]][[instructions]] <- 
+#       names(var_weights$total[[out]][[instructions]])
+#   }
+# }
 
 
 
