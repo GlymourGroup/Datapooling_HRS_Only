@@ -214,6 +214,9 @@ for(out in outcomes){
   }
   
   ### GOLD STANDARD ----
+  # The "Gold Standard" should be the super population we are drawing from
+  # with restrictions to be able to be in the older or younger cohort
+  # (e.g. complete cases of matching variables and the outcome)
   # Standardize age
   d$gold[[out_hrs_14]]$age_dec50 = 
     (d$gold[[out_hrs_14]]$AGEINTERVIEW_HRS_14-50)/10
@@ -225,16 +228,15 @@ for(out in outcomes){
   
   for(set in names(matched_sets[[out]])){
     
-    # Subset TRUE data to those who were matched in this set
-    d_gold_sets[[set]] <- 
-      d$gold[[out_hrs_14]] %>% 
-      filter(CASE_ID_HRS_RA %in% matched_sets[[out]][[set]]$CASE_ID_OLD_RA)
+    # Do NOT Subset TRUE data to those who were matched in this set
+    d_gold_sets[[set]] <- d$gold[[out_hrs_14]] #%>% 
+      #filter(CASE_ID_HRS_RA %in% matched_sets[[out]][[set]]$CASE_ID_OLD_RA)
     
     # Construct a regression formula 
     type <- model_info[out,"type"]
     
     ## Linear Regression
-    if(type %in% c("score", "cont")){
+    #if(type %in% c("score", "cont")){
       form <- as.formula(paste0(out_hrs_14," ~ ", "BMI_HRS_2 +
                                  age_dec50 + FEMALE_HRS_RA + 
                                  RACE_ETH_HRS_RA"))
@@ -242,14 +244,14 @@ for(out in outcomes){
                                                      data=d_gold_sets[[set]]))))
       
     ## Logistic Regression
-    }else if(type == "binary"){
-      form <- as.formula(paste0(out_hrs_14," ~ ", "BMI_HRS_2 +
-                                 age_dec50 + FEMALE_HRS_RA + 
-                                 RACE_ETH_HRS_RA"))
-      m_gold[[out]][[set]] <- as.data.frame(coef(summary(glm(form, 
-                                                      data=d_gold_sets[[set]], 
-                                                      family = "binomial"))))
-    }else{cat("Unrecognized type \n")}
+    # }else if(type == "binary"){
+    #   form <- as.formula(paste0(out_hrs_14," ~ ", "BMI_HRS_2 +
+    #                              age_dec50 + FEMALE_HRS_RA + 
+    #                              RACE_ETH_HRS_RA"))
+    #   m_gold[[out]][[set]] <- as.data.frame(coef(summary(glm(form, 
+    #                                                   data=d_gold_sets[[set]], 
+    #                                                   family = "binomial"))))
+    # }else{cat("Unrecognized type \n")}
   }
   
   

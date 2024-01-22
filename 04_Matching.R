@@ -41,7 +41,7 @@ for(i in outcomes){
 
 ### Weights ----
 weights <- readRDS("../../DP_HRS_Only/Weights.RDS")
-weights <- weights$total
+weights <- weights$scaled_exp
 
 # Matching ----
 
@@ -211,29 +211,29 @@ for(outcome in outcomes){
     }
     ## Calculate Weights ----
     cat("CALCULATING WEIGHTS\n")
-    
-    # for(var in instruction_sets[[outcome]][[instructions]]$distVars){
-    #   matched[[paste0(var,"_dist_weighted")]] = 
-    #     1/weights[[outcome]][[instructions]][[var]]*matched[[paste0(var,"_dist")]]
-    #   matched[[paste0(var,"_z_dist_weighted")]] = 
-    #     1/weights[[outcome]][[instructions]][[var]]*matched[[paste0(var,"_z_dist")]]
-    # }
+
+    for(var in instruction_sets[[outcome]][[instructions]]$distVars){
+      matched[[paste0(var,"_dist_weighted")]] =
+        1/weights[[outcome]][[instructions]][[var]]*matched[[paste0(var,"_dist")]]
+      matched[[paste0(var,"_z_dist_weighted")]] =
+        1/weights[[outcome]][[instructions]][[var]]*matched[[paste0(var,"_z_dist")]]
+    }
     
     ## Total the distances ----
     
     # Initiate Total Scores
-    #matched$dist_z_weighted = 0
+    matched$dist_z_weighted = 0
     matched$dist_z_unweighted = 0
-    #matched$dist_weighted = 0
+    matched$dist_weighted = 0
     matched$dist_unweighted = 0
     
     for(var in instruction_sets[[outcome]][[instructions]]$distVars){
-      # matched$dist_z_weighted = 
-      #   matched$dist_z_weighted + matched[[paste0(var,"_z_dist_weighted")]]
+      matched$dist_z_weighted =
+        matched$dist_z_weighted + matched[[paste0(var,"_z_dist_weighted")]]
       matched$dist_z_unweighted=
         matched$dist_z_unweighted+matched[[paste0(var,"_z_dist")]]
-      # matched$dist_weighted   = 
-      #   matched$dist_weighted + matched[[paste0(var,"_dist_weighted")]]
+      matched$dist_weighted   =
+        matched$dist_weighted + matched[[paste0(var,"_dist_weighted")]]
       matched$dist_unweighted = 
         matched$dist_unweighted+ matched[[paste0(var,"_dist")]]
     }
