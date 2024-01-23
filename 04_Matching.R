@@ -240,7 +240,7 @@ for(outcome in outcomes){
     
     # For some reason, can't directly manipulate weight of interest
     # assign to `new` variable
-    matched$new <- matched[["dist_z_unweighted"]]
+    matched$new <- matched[["dist_z_weighted"]]
     
     ## Find top matches ----
     out[[outcome]][[instructions]] <- matched %>%

@@ -22,8 +22,28 @@ d$og_wide <- readRDS("../../DP_HRS_Only/HRS_wide.rds")
 d$long <- readRDS("../../DP_HRS_Only/Long_Data.rds")
 d$wide <- readRDS("../../DP_HRS_Only/Wide_Data.rds")
 
-# "TRUTH"
+## Gold Standard ----
 d$gold <- readRDS("../../DP_HRS_Only/Wide_Data.rds")
+
+### Filter for mediators ----
+
+# Diabetes
+d$gold$DIABETES_HRS_14 <- d$gold$DIABETES_HRS_14 %>%
+  filter(!is.na(BMI_HRS_2), 
+         !is.na(DIAB_MATCH_VAR), !is.na(BMI_HRS_9), !is.na(HbA1c),
+         !is.na(DIABETES_HRS_14))
+
+# General health
+d$gold$GENHEALTH_HRS_14 <- d$gold$GENHEALTH_HRS_14 %>% 
+  filter(!is.na(BMI_HRS_2), 
+         !is.na(BMI_HRS_9), !is.na(GENHEALTH_HRS_9),
+         !is.na(GENHEALTH_HRS_14))
+
+# SBP
+d$gold$SYSTOLIC_BP_HRS_14 <- d$gold$SYSTOLIC_BP_HRS_14 %>% 
+  filter(!is.na(BMI_HRS_2), 
+         !is.na(BMI_HRS_9), !is.na(SYSTOLIC_BP_HRS_9),
+         !is.na(SYSTOLIC_BP_HRS_14))
 
 ## matched sets ----
 matched_sets<-readRDS("../../DP_HRS_Only/QCd_MatchedData.RDS")
@@ -257,10 +277,10 @@ for(out in outcomes){
   
   ### Final Results Table ----
   rubin_cleaned[[out]] <- 
-    data.frame(matrix(nrow=length(rubin[[out]]$Instructions_BOTH.R$coef_mean),
+    data.frame(matrix(nrow=length(rubin[[out]]$Instructions_NONE.R$coef_mean),
                                    ncol=length(matched_sets[[out]])*2))
   rownames(rubin_cleaned[[out]]) <- 
-    names(rubin[[out]]$Instructions_BOTH.R$coef_mean)
+    names(rubin[[out]]$Instructions_NONE.R$coef_mean)
   colnames(rubin_cleaned[[out]]) <- 
     c(names(matched_sets[[out]]), 
       paste0(names(matched_sets[[out]]),"_TRUTH"))
@@ -330,23 +350,44 @@ for(out in outcomes){
   fig1[[out]]$LB <- as.numeric(rubin_lb_list[[out]][2,])
   fig1[[out]]$UB <- as.numeric(rubin_ub_list[[out]][2,])
   
-  plot1[[out]] <- fig1[[out]] %>% 
-    filter(!grepl("_TRUTH", Model)) %>%
-    mutate(Model = gsub("Instructions_", "", Model)) %>%
-    mutate(Model = gsub(".R", "", Model)) %>%
-    ggplot(aes(x = Model, y = Estimate)) +
-    #geom_point(position = position_dodge(width = 0.2)) +
-    geom_errorbar(aes(ymin=LB, ymax=UB), 
-                  width=0.2,
-                  position =position_dodge(width = 0.2)) +
-    geom_hline(yintercept = fig1[[out]][grep("_BOTH.R_TRUTH",fig1[[out]]$Model),
-                                        "Estimate"])+
-    geom_hline(yintercept = fig1[[out]][grep("_BOTH.R_TRUTH",fig1[[out]]$Model),
-                                        "LB"],
-               linetype="dashed")+
-    geom_hline(yintercept = fig1[[out]][grep("_BOTH.R_TRUTH",fig1[[out]]$Model),
-                                        "UB"],
-               linetype="dashed")
+  if(out != "DIABETES"){
+    plot1[[out]] <- fig1[[out]] %>% 
+      filter(!grepl("_TRUTH", Model)) %>%
+      mutate(Model = gsub("Instructions_", "", Model)) %>%
+      mutate(Model = gsub(".R", "", Model)) %>%
+      ggplot(aes(x = Model, y = Estimate)) +
+      #geom_point(position = position_dodge(width = 0.2)) +
+      geom_errorbar(aes(ymin=LB, ymax=UB), 
+                    width=0.2,
+                    position =position_dodge(width = 0.2)) +
+      geom_hline(yintercept=fig1[[out]][grep("_BOTH.R_TRUTH",fig1[[out]]$Model),
+                                          "Estimate"])+
+      geom_hline(yintercept=fig1[[out]][grep("_BOTH.R_TRUTH",fig1[[out]]$Model),
+                                          "LB"],
+                 linetype="dashed")+
+      geom_hline(yintercept=fig1[[out]][grep("_BOTH.R_TRUTH",fig1[[out]]$Model),
+                                          "UB"],
+                 linetype="dashed")
+  }else{
+    plot1[[out]] <- fig1[[out]] %>% 
+      filter(!grepl("_TRUTH", Model)) %>%
+      mutate(Model = gsub("Instructions_", "", Model)) %>%
+      mutate(Model = gsub(".R", "", Model)) %>%
+      ggplot(aes(x = Model, y = Estimate)) +
+      #geom_point(position = position_dodge(width = 0.2)) +
+      geom_errorbar(aes(ymin=LB, ymax=UB), 
+                    width=0.2,
+                    position =position_dodge(width = 0.2)) +
+      geom_hline(yintercept=fig1[[out]][grep("_ALL3.R_TRUTH",fig1[[out]]$Model),
+                                          "Estimate"])+
+      geom_hline(yintercept=fig1[[out]][grep("_ALL3.R_TRUTH",fig1[[out]]$Model),
+                                          "LB"],
+                 linetype="dashed")+
+      geom_hline(yintercept=fig1[[out]][grep("_ALL3.R_TRUTH",fig1[[out]]$Model),
+                                          "UB"],
+                 linetype="dashed")
+  }
+
   
 }
 

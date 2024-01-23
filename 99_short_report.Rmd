@@ -80,13 +80,14 @@ input$tbl_dist[[out]] <- input$tbl_dist[[out]] %>%
 input$regresult[["DIABETES"]] <- input$regresult[["DIABETES"]] %>% 
   select(Instructions_NONE.R, 
          Instructions_EXP.R, Instructions_OUT.R,Instructions_DIAB.R,
-         Instructions_BOTH.R, Instructions_DIABA1c.R, Instructions_ALL3.R,
+         #Instructions_BOTH.R, 
+         Instructions_DIABA1c.R, Instructions_ALL3.R,
          Instructions_ALL3.R_TRUTH) %>%
   rename(`No Mediators` = Instructions_NONE.R,
          `BMI` = Instructions_EXP.R,
          `HbA1c` := Instructions_OUT.R,
          `Diabetes` = Instructions_DIAB.R,
-         `BMI & HbA1c` = Instructions_BOTH.R,
+         #`BMI & HbA1c` = Instructions_BOTH.R,
          `Diabetes and HbA1c` = Instructions_DIABA1c.R,
          `BMI, HbA1c, DM` = Instructions_ALL3.R,
          `Gold Standard` = Instructions_ALL3.R_TRUTH) 
@@ -97,11 +98,12 @@ input$nTracker[["DIABETES"]] <- input$nTracker[["DIABETES"]] %>%
          `BMI` = Instructions_EXP.R,
          `HbA1c` := Instructions_OUT.R,
          `Diabetes` = Instructions_DIAB.R,
-         `BMI & HbA1c` = Instructions_BOTH.R,
+         #`BMI & HbA1c` = Instructions_BOTH.R,
          `Diabetes & HbA1c` = Instructions_DIABA1c.R,
          `BMI, HbA1c, DM` = Instructions_ALL3.R) %>%
   select(`None`, `BMI`, `HbA1c`, `Diabetes`, 
-         `BMI & HbA1c`, `Diabetes & HbA1c`, `BMI, HbA1c, DM`)
+         #`BMI & HbA1c`, 
+         `Diabetes & HbA1c`, `BMI, HbA1c, DM`)
 
 # Diabetes Table 1
 input$table1[["DIABETES"]] <- cbind(
@@ -109,7 +111,7 @@ input$table1[["DIABETES"]] <- cbind(
   input$tbl1[["DIABETES"]]$Instructions_EXP.R,
   input$tbl1[["DIABETES"]]$Instructions_OUT.R,
   input$tbl1[["DIABETES"]]$Instructions_DIAB.R,
-  input$tbl1[["DIABETES"]]$Instructions_BOTH.R,
+  #input$tbl1[["DIABETES"]]$Instructions_BOTH.R,
   input$tbl1[["DIABETES"]]$Instructions_DIABA1c.R,
   input$tbl1[["DIABETES"]]$Instructions_ALL3.R
 )
@@ -120,13 +122,15 @@ input$tbl_dist[["DIABETES"]] <- input$tbl_dist[["DIABETES"]] %>%
          `Diabetes` = Instructions_DIAB.R,
          `Diabetes & HbA1c` = Instructions_DIABA1c.R,
          `BMI` = Instructions_EXP.R,
-         `HbA1c` := Instructions_OUT.R,
-         `HbA1c & BMI` = Instructions_BOTH.R)
+         `HbA1c` := Instructions_OUT.R)
+#         `HbA1c & BMI` = Instructions_BOTH.R)
 
 # Order the images so that it makes somewhat more sense
-input$figure1$DIABETES$data$Model <- c("BMI, HbA1c, DM", "BMI & HbA1c", "Diabetes", "Diabetes & HbA1c", "BMI", "None", "HbA1c")
+input$figure1$DIABETES$data$Model <- c("BMI, HbA1c, DM", #"BMI & HbA1c", 
+                                       "Diabetes", "Diabetes & HbA1c", "BMI", "None", "HbA1c")
 input$figure1$DIABETES$data$Model <- factor(input$figure1$DIABETES$data$Model,
-                          levels = c("None", "BMI", "HbA1c", "Diabetes", "BMI & HbA1c", "Diabetes & HbA1c", "BMI, HbA1c, DM"))
+                          levels = c("None", "BMI", "HbA1c", "Diabetes", #"BMI & HbA1c", 
+                                     "Diabetes & HbA1c", "BMI, HbA1c, DM"))
 
 input$figure1$GENHEALTH$data$Model <- c("BOTH", "BMI", "NONE", "GENHEALTH")
 input$figure1$GENHEALTH$data$Model <-
@@ -144,7 +148,7 @@ input$tbl_means$DIABETES <- input$tbl_means$DIABETES %>%
          Instructions_EXP.R_OLD,    Instructions_EXP.R_young,
          Instructions_OUT.R_OLD,    Instructions_OUT.R_young,
          Instructions_DIAB.R_OLD,   Instructions_DIAB.R_young,
-         Instructions_BOTH.R_OLD,   Instructions_BOTH.R_young,
+         #Instructions_BOTH.R_OLD,   Instructions_BOTH.R_young,
          Instructions_DIABA1c.R_OLD,Instructions_DIABA1c.R_young,
          Instructions_ALL3.R_OLD,   Instructions_ALL3.R_young)
 
@@ -244,10 +248,10 @@ input$tbl_means$DIABETES %>%
   kable(caption = "Diabetes - Comparison Mean Values: Old vs Young",
         "latex",
         booktabs = T,
-        col.names = rep(c("Old","Young"),7)) %>%
+        col.names = rep(c("Old","Young"),6)) %>%
   kable_styling("striped",
                 latex_options = c("HOLD_position", "scale_down")) %>%
-  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "HbA1c" = 2, "Diabetes" = 2, "BMI & HbA1c" = 2, "Diabetes and HbA1c" = 2, "All Mediators" = 2))
+  add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "HbA1c" = 2, "Diabetes" = 2, "Diabetes and HbA1c" = 2, "All Mediators" = 2))
 ```
 
 ```{r, echo=FALSE}
@@ -318,11 +322,11 @@ input$table1$DIABETES %>%
   kable(caption = "Diabetes - Matched Vs Unmatched",
         "latex",
         booktabs = T,
-        col.names = rep(c("Matched","Unmatched"),7)) %>%
+        col.names = rep(c("Matched","Unmatched"),6)) %>%
   kable_styling("striped",
                 latex_options = c("HOLD_position", "scale_down")) %>%
   add_header_above(c(" "=1, "No Mediators" = 2, "BMI" = 2, "HbA1c" = 2, 
-                     "Diabetes" = 2, "BMI & HbA1c" = 2, "Diabetes & HbA1c" = 2,
+                     "Diabetes" = 2, "Diabetes & HbA1c" = 2,
                      "Both Mediators" = 2))
 ```
 
@@ -394,3 +398,23 @@ input$regresult$DIABETES   %>% write.csv("99_Outputs/Diab_reg.csv")
 input$regresult$GENHEALTH  %>% write.csv("99_Outputs/GenHealth_reg.csv")
 input$regresult$SYSTOLIC_BP%>% write.csv("99_Outputs/SysBP_reg.csv")
 ```
+
+```{r exportpng, include=FALSE}
+input$figure1$DIABETES + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(filename = "DIABETES.png", device="png", path="99_Outputs/")
+
+input$figure1$GENHEALTH +
+                         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(filename = "GENHEALTH.png", device="png", path="99_Outputs/")
+
+input$figure1$SYSTOLIC_BP + 
+                         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(filename = "SYS_BP.png", device="png", path="99_Outputs/")
+
+
+```
+
