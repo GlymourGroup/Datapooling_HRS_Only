@@ -96,7 +96,17 @@ Go on with different outcomes. Use older analyses to see what covariates we coul
 Check in with Scott and Maria as to whether missing values are okay to use across permutations. 
 
 ============
-01/04/2023 
+01/04/2024
 
 in script 06, sd overwrites mean for distances (line 154) - fixed. 
 Would be better to take the absolute difference rather than a direct subtraction. 
+
+
+===========
+01/25/2024
+Rather than univariate cutoffs/thresholds, consider a combined cutoff (think euclidean distance of matched pairs)
+
+Or make the cutoff differ by diabetes/non-diabetes group such that the threshold value is calculated within each group. 
+What to do with multiple continuous variables? 
+
+Match on residuals? 
